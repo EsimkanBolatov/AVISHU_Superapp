@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "AVISHU_Superapp",
-    "slug": "AVISHU_Superapp",
+    "name": "AVISHU Superapp",
+    "slug": "avishu-superapp",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0A0A0A"
     },
+    "scheme": "avishu",
     "ios": {
       "supportsTablet": true
     },
@@ -30,6 +31,9 @@
       "expo-router",
       "expo-font",
       "expo-localization"
-    ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }

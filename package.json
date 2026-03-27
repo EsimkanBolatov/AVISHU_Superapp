@@ -1,12 +1,16 @@
 {
   "name": "avishu_superapp",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "dev": "concurrently -n FRONT,CORE -c white,gray \"npm run dev:web\" \"npm run dev:core\"",
+    "dev:core": "npm --prefix server/core-api run dev",
+    "dev:web": "expo start --web",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo-google-fonts/oswald": "^0.4.2",
