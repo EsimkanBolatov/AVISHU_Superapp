@@ -12,6 +12,12 @@ import { useResolvedTheme } from "../../src/lib/theme";
 import { useRequireRole } from "../../src/lib/useRequireRole";
 import { useAppStore } from "../../src/store/useAppStore";
 
+const EDITORIAL_NOTES = [
+  "READY-TO-WEAR with fast purchase flow.",
+  "PREORDER mode with date selection.",
+  "LOYALTY tracking inside the same customer profile.",
+];
+
 export default function ClientScreen() {
   const redirect = useRequireRole("client");
   const theme = useResolvedTheme();
@@ -24,7 +30,7 @@ export default function ClientScreen() {
   }
 
   return (
-    <ScreenShell title="VITRINA" subtitle="КОЛЛЕКЦИЯ И ЗАКАЗЫ" profileRoute="/profile">
+    <ScreenShell title="VITRINA" subtitle="COLLECTION / CLIENT FLOW" profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.heroPanel}>
           <View style={styles.heroCopy}>
@@ -33,17 +39,17 @@ export default function ClientScreen() {
               BLACK TAILORING WITH EDITORIAL RHYTHM
             </Text>
             <Text style={[styles.heroText, { color: theme.colors.textSecondary }]}>
-              Каталог строится на контрасте черного, белого и воздуха. Каждый продукт
-              поддерживает быструю покупку или предзаказ с фиксацией даты.
+              The vitrina keeps the fashion layer premium and quiet: strong typography, strict
+              contrasts and a direct path from discovery to purchase or preorder.
             </Text>
             <View style={styles.heroActions}>
               <MonoButton
-                label="ОТКРЫТЬ ПРОФИЛЬ"
+                label="OPEN PROFILE"
                 variant="secondary"
                 onPress={() => router.push("/profile")}
               />
               <MonoButton
-                label="СМОТРЕТЬ КАТАЛОГ"
+                label="OPEN PRODUCT"
                 onPress={() => router.push("/client/product/p-001")}
               />
             </View>
@@ -74,11 +80,20 @@ export default function ClientScreen() {
           </View>
         </Panel>
 
+        <View style={styles.noteGrid}>
+          {EDITORIAL_NOTES.map((note, index) => (
+            <Panel key={note} style={styles.noteCard}>
+              <Text style={[styles.noteIndex, { color: theme.colors.textMuted }]}>0{index + 1}</Text>
+              <Text style={[styles.noteText, { color: theme.colors.textSecondary }]}>{note}</Text>
+            </Panel>
+          ))}
+        </View>
+
         {activeOrder ? (
           <Panel>
             <SectionHeading
               title="ACTIVE ORDER"
-              subtitle="Статус обновляется в реальном времени без перезагрузки."
+              subtitle="The client sees status updates immediately after franchisee and atelier actions."
               compact
             />
             <OrderTracker order={activeOrder} />
@@ -87,7 +102,7 @@ export default function ClientScreen() {
 
         <SectionHeading
           title="CATALOG"
-          subtitle="Минималистичная сетка товара с двумя сценариями: купить сразу или оформить предзаказ."
+          subtitle="A premium grid for immediate purchase and preorder in the same interface."
         />
         <View style={styles.catalogGrid}>
           {products.map((product) => (
@@ -158,6 +173,26 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 11,
     letterSpacing: 1.6,
+  },
+  noteGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  noteCard: {
+    flexBasis: 240,
+    flexGrow: 1,
+    minHeight: 128,
+    gap: 12,
+  },
+  noteIndex: {
+    fontFamily: "Oswald_500Medium",
+    fontSize: 22,
+  },
+  noteText: {
+    fontFamily: "SpaceGrotesk_400Regular",
+    fontSize: 14,
+    lineHeight: 22,
   },
   catalogGrid: {
     flexDirection: "row",

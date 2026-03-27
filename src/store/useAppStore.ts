@@ -1,6 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18n from "i18next";
 import { io, Socket } from "socket.io-client";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import {
   bootstrapRequest,
@@ -99,79 +101,96 @@ function attachSocket(
   set({ socket });
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
-  token: null,
-  user: null,
-  products: [],
-  orders: [],
-  metrics: EMPTY_METRICS,
-  activeOrder: null,
-  language: "ru",
-  themePreference: "system",
-  isLoading: false,
-  socket: null,
-  hydrate: () => {
-    void i18n.changeLanguage(get().language);
-  },
-  setLanguage: (language) => {
-    set({ language });
-    void i18n.changeLanguage(language);
-  },
-  setThemePreference: (themePreference) => set({ themePreference }),
-  login: async (role) => {
-    set({ isLoading: true });
-
-    try {
-      const auth = await loginRequest(role);
-      const bootstrap = await bootstrapRequest(auth.token);
-      attachSocket(auth.token, set, get);
-      set({
-        ...mapBootstrap(auth.token, bootstrap),
-      });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-  logout: () => {
-    get().socket?.disconnect();
-    set({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
       token: null,
       user: null,
       products: [],
       orders: [],
       metrics: EMPTY_METRICS,
       activeOrder: null,
+      language: "ru",
+      themePreference: "system",
+      isLoading: false,
       socket: null,
-    });
-  },
-  placeOrder: async (productId, scheduledDate) => {
-    const token = get().token;
+      hydrate: () => {
+        void i18n.changeLanguage(get().language);
+      },
+      setLanguage: (language) => {
+        set({ language });
+        void i18n.changeLanguage(language);
+      },
+      setThemePreference: (themePreference) => set({ themePreference }),
+      login: async (role) => {
+        set({ isLoading: true });
 
-    if (!token) {
-      throw new Error("No token");
-    }
+        try {
+          const auth = await loginRequest(role);
+          const bootstrap = await bootstrapRequest(auth.token);
+          attachSocket(auth.token, set, get);
+          set({
+            ...mapBootstrap(auth.token, bootstrap),
+          });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+      logout: () => {
+        get().socket?.disconnect();
+        set({
+          token: null,
+          user: null,
+          products: [],
+          orders: [],
+          metrics: EMPTY_METRICS,
+          activeOrder: null,
+          socket: null,
+        });
+      },
+      placeOrder: async (productId, scheduledDate) => {
+        const token = get().token;
 
-    const response = await placeOrderRequest(token, { productId, scheduledDate });
-    const nextOrders = upsertOrder(get().orders, response.order);
-    const user = get().user;
-    const activeOrder = getActiveOrder(user, nextOrders);
+        if (!token) {
+          throw new Error("No token");
+        }
 
-    set({ orders: nextOrders, activeOrder });
+        const response = await placeOrderRequest(token, { productId, scheduledDate });
+        const nextOrders = upsertOrder(get().orders, response.order);
+        const user = get().user;
+        const activeOrder = getActiveOrder(user, nextOrders);
 
-    return response.order;
-  },
-  updateOrderStatus: async (orderId, status) => {
-    const token = get().token;
+        set({ orders: nextOrders, activeOrder });
 
-    if (!token) {
-      throw new Error("No token");
-    }
+        return response.order;
+      },
+      updateOrderStatus: async (orderId, status) => {
+        const token = get().token;
 
-    const response = await updateOrderStatusRequest(token, orderId, status);
-    const nextOrders = upsertOrder(get().orders, response.order);
-    const user = get().user;
-    const activeOrder = getActiveOrder(user, nextOrders);
+        if (!token) {
+          throw new Error("No token");
+        }
 
-    set({ orders: nextOrders, activeOrder });
-  },
-}));
+        const response = await updateOrderStatusRequest(token, orderId, status);
+        const nextOrders = upsertOrder(get().orders, response.order);
+        const user = get().user;
+        const activeOrder = getActiveOrder(user, nextOrders);
+
+        set({ orders: nextOrders, activeOrder });
+      },
+    }),
+    {
+      name: "avishu-ui-preferences",
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        language: state.language,
+        themePreference: state.themePreference,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          void i18n.changeLanguage(state.language);
+        }
+      },
+    },
+  ),
+);

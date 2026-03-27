@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useResolvedTheme } from "../lib/theme";
 import { useAppStore } from "../store/useAppStore";
 import { Role } from "../types";
+import { ThemeSwitch } from "./ThemeSwitch";
 
 const ROLE_ROUTES: Record<Role, string> = {
   client: "/client",
@@ -75,14 +76,17 @@ export function ScreenShell({
             ))}
           </View>
 
-          <Pressable
-            onPress={() => router.push(profileRoute ?? "/profile")}
-            style={[styles.profile, { borderColor: theme.colors.border }]}
-          >
-            <Text style={[styles.profileLabel, { color: theme.colors.textPrimary }]}>
-              {user?.name ?? "GUEST"}
-            </Text>
-          </Pressable>
+          <View style={styles.actions}>
+            <ThemeSwitch />
+            <Pressable
+              onPress={() => router.push(profileRoute ?? "/profile")}
+              style={[styles.profile, { borderColor: theme.colors.border }]}
+            >
+              <Text style={[styles.profileLabel, { color: theme.colors.textPrimary }]}>
+                {user?.name ?? "GUEST"}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.content}>{children}</View>
@@ -146,6 +150,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  actions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    alignItems: "center",
   },
   profileLabel: {
     fontFamily: "SpaceGrotesk_700Bold",

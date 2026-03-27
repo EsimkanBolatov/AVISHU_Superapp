@@ -13,6 +13,7 @@ import { MonoButton } from "../src/components/MonoButton";
 import { Panel } from "../src/components/Panel";
 import { SectionHeading } from "../src/components/SectionHeading";
 import { StatusPill } from "../src/components/StatusPill";
+import { ThemeSwitch } from "../src/components/ThemeSwitch";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
 import { Role } from "../src/types";
@@ -69,6 +70,10 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.topbar}>
+          <MonoButton label="BACK TO LANDING" variant="secondary" onPress={() => router.replace("/")} />
+          <ThemeSwitch />
+        </View>
         <View style={styles.hero}>
           <StatusPill label="AVISHU SUPERAPP / CORE MVP" tone="solid" />
           <Text style={[styles.brand, { color: theme.colors.textPrimary }]}>AVISHU</Text>
@@ -175,6 +180,13 @@ const styles = StyleSheet.create({
   hero: {
     gap: 14,
     paddingTop: 12,
+  },
+  topbar: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 10,
+    alignItems: "center",
   },
   brand: {
     fontFamily: "Oswald_500Medium",

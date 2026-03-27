@@ -1,60 +1,77 @@
-# AVISHU Superapp Core MVP
+# AVISHU Superapp Core
 
-MVP по проекту №1 из ТЗ: `Expo Router` frontend + `Express + Socket.io` core API. Проект №2 (`AI Vision`) сознательно не включен в реализацию.
+Project scope in this repository:
 
-## Что уже есть
+- `Expo Router` frontend for web/mobile
+- `Express + Socket.io` core API
+- `Prisma + PostgreSQL` data layer
+- Project `#2` (`AI Vision`) is intentionally out of scope here
 
-- Три ролевых сценария: клиент, франчайзи, цех.
-- Премиальная монохромная дизайн-система с light/dark темой.
-- Адаптивные экраны для web/mobile.
-- Сквозной realtime-поток заказа: клиент создает, франчайзи переводит в производство, цех завершает.
-- Локализация заготовлена для `ru`, `kk`, `en`.
-- Prisma-схема для `PostgreSQL` добавлена как контракт на следующий этап.
+## What is included
 
-## MVP-допущение
+- Public landing page for the brand and store story
+- Role-based demo login for `client`, `franchisee`, `production`
+- Client vitrina with product cards, preorder flow, payment stub
+- Franchisee dashboard with live incoming orders
+- Production tablet queue with large action controls
+- Manual light/dark theme switching
+- Realtime order sync through `Socket.io`
 
-Текущий runtime `core-api` работает на in-memory данных, чтобы проект запускался сразу без локального PostgreSQL. При этом схема под `Prisma/PostgreSQL` уже лежит в [server/core-api/prisma/schema.prisma](/c:/Users/Админ/PycharmProjects/AVISHU_Superapp/server/core-api/prisma/schema.prisma) и готова для следующего шага интеграции.
+## Run the project
 
-## Запуск
-
-1. Установить зависимости core API:
+1. Start PostgreSQL in Docker:
 
 ```bash
-cd server/core-api
-npm install
+npm run db:up
 ```
 
-2. Вернуться в корень и поднять frontend + API:
+2. Run Prisma migration:
+
+```bash
+npm run db:migrate
+```
+
+3. Seed demo data:
+
+```bash
+npm run db:seed
+```
+
+4. Start frontend and API together:
 
 ```bash
 npm run dev
 ```
 
-3. Либо запускать по отдельности:
+## Useful commands
 
 ```bash
 npm run dev:web
 npm run dev:core
+npm run db:down
 ```
 
-## Переменные окружения
+## Environment
 
-Корень:
+Root `.env`
 
 ```bash
 EXPO_PUBLIC_CORE_API_URL=http://localhost:3000
 ```
 
-Core API:
+`server/core-api/.env`
 
 ```bash
 PORT=3000
 JWT_SECRET=super_hackathon_secret_avishu
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/avishu_core?schema=public
 ```
 
-## Демо-флоу
+## Demo flow
 
-1. Войти как `Клиент`, оформить заказ на карточке товара.
-2. Переключиться на роль `Франчайзи` в профиле и перевести заказ в производство.
-3. Переключиться на роль `Цех` и завершить этап.
-4. Вернуться к клиенту и увидеть статус `Готово`.
+1. Open the landing page `/`
+2. Go to demo login and enter as `client`
+3. Create an order from a product card
+4. Switch to `franchisee` and move the order to production
+5. Switch to `production` and finish the stage
+6. Return to `client` and confirm the status changed to `ready`

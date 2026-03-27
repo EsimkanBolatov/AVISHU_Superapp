@@ -25,17 +25,17 @@ enum OrderStatus {
 }
 
 model User {
-  id              String  @id @default(cuid())
+  id              String   @id
   name            String
-  role            Role
-  loyaltyProgress Int     @default(0)
+  role            Role     @unique
+  loyaltyProgress Int      @default(0)
   orders          Order[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
 model Product {
-  id           String              @id @default(cuid())
+  id           String              @id
   sku          String              @unique
   name         String
   price        String
@@ -48,7 +48,7 @@ model Product {
 }
 
 model Order {
-  id            String      @id @default(cuid())
+  id            String      @id
   number        String      @unique
   productId     String
   customerId    String
