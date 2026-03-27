@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18n from "i18next";
 import { io, Socket } from "socket.io-client";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware.js";
 
 import {
   bootstrapRequest,
