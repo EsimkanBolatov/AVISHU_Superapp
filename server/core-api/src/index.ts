@@ -381,8 +381,8 @@ app.post("/api/core/v1/orders/:id/attachments", authMiddleware, async (request, 
 });
 
 app.post("/api/core/v1/admin/products", authMiddleware, async (request, response) => {
-  if (request.user.role !== "franchisee") {
-    response.status(403).json({ message: "Only franchisee role can manage catalog." });
+  if (request.user.role !== "admin") {
+    response.status(403).json({ message: "Only admin role can manage catalog." });
     return;
   }
 
@@ -457,8 +457,8 @@ app.post("/api/core/v1/admin/products", authMiddleware, async (request, response
 });
 
 app.patch("/api/core/v1/admin/products/:id", authMiddleware, async (request, response) => {
-  if (request.user.role !== "franchisee") {
-    response.status(403).json({ message: "Only franchisee role can manage catalog." });
+  if (request.user.role !== "admin") {
+    response.status(403).json({ message: "Only admin role can manage catalog." });
     return;
   }
 
@@ -545,8 +545,8 @@ app.patch("/api/core/v1/admin/products/:id", authMiddleware, async (request, res
 });
 
 app.delete("/api/core/v1/admin/products/:id", authMiddleware, async (request, response) => {
-  if (request.user.role !== "franchisee") {
-    response.status(403).json({ message: "Only franchisee role can manage catalog." });
+  if (request.user.role !== "admin") {
+    response.status(403).json({ message: "Only admin role can manage catalog." });
     return;
   }
 

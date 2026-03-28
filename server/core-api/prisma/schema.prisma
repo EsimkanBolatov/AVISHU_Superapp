@@ -9,6 +9,7 @@ datasource db {
 
 enum Role {
   client
+  admin
   franchisee
   production
 }

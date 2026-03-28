@@ -12,17 +12,9 @@ import { referenceTechJacket } from "../../src/lib/brandArt";
 import { useResolvedTheme } from "../../src/lib/theme";
 import { useRequireRole } from "../../src/lib/useRequireRole";
 import { useAppStore } from "../../src/store/useAppStore";
-import { AppLanguage, OrderStatus, ProductAvailability, ProductUpsertPayload } from "../../src/types";
+import { AppLanguage, ProductAvailability, ProductUpsertPayload } from "../../src/types";
 
 type AdminTab = "catalog" | "orders";
-
-const ORDER_STATUSES: OrderStatus[] = [
-  "pending_franchisee",
-  "in_production",
-  "quality_check",
-  "ready",
-  "delivered",
-];
 
 const EMPTY_PRODUCT_FORM: ProductUpsertPayload = {
   name: "",
@@ -56,17 +48,14 @@ const COPY: Record<
     leadSubtitle: string;
     catalogTitle: string;
     catalogSubtitle: string;
+    ordersTitle: string;
+    ordersSubtitle: string;
     createProduct: string;
     editProduct: string;
     reset: string;
     deleteProduct: string;
     updateProduct: string;
     saveProduct: string;
-    orderTitle: string;
-    orderSubtitle: string;
-    comment: string;
-    commentPlaceholder: string;
-    saveComment: string;
     price: string;
     category: string;
     cover: string;
@@ -83,33 +72,33 @@ const COPY: Record<
     inStock: string;
     preorder: string;
     edit: string;
-    orderStatus: string;
-    updateStatus: string;
+    customer: string;
+    status: string;
+    payment: string;
+    delivery: string;
+    viewOnly: string;
   }
 > = {
   ru: {
     shellTitle: "АДМИН",
-    shellSubtitle: "КАТАЛОГ / ЗАКАЗЫ / ПЕРСОНАЛ",
+    shellSubtitle: "КАТАЛОГ / КОНТРОЛЬ ВИТРИНЫ / ОБЗОР ЗАКАЗОВ",
     webOnlyTitle: "WEB-ONLY АДМИНКА",
     webOnlySubtitle: "Эта панель предназначена строго для веб-версии персонала.",
     catalog: "КАТАЛОГ",
     orders: "ЗАКАЗЫ",
-    leadBadge: "ADMIN CONTROL / STAFF SURFACE",
-    leadTitle: "ПОЛНОЦЕННАЯ ВЕБ-ПАНЕЛЬ ДЛЯ КАТАЛОГА И СТАТУСОВ ЗАКАЗОВ",
-    leadSubtitle: "Персонал получает отдельную рабочую поверхность для редактирования товаров и контроля операционного потока.",
+    leadBadge: "ADMIN CONTROL / MERCHANDISING SURFACE",
+    leadTitle: "ОТДЕЛЬНАЯ ПАНЕЛЬ ДЛЯ КАТАЛОГА, КОНТЕНТА И ВИДИМОСТИ ЗАКАЗОВ",
+    leadSubtitle: "Admin управляет ассортиментом и качеством витрины. Операционный перевод заказов остается у франчайзи и производства.",
     catalogTitle: "РЕДАКТОР КАТАЛОГА",
     catalogSubtitle: "Создание, обновление и удаление карточек товаров с размерами, ценой и медиа.",
+    ordersTitle: "ОБЗОР СТАТУСОВ ЗАКАЗОВ",
+    ordersSubtitle: "Read-only обзор статусов и клиентских заказов без смешения с operational-role франчайзи.",
     createProduct: "СОЗДАТЬ ТОВАР",
     editProduct: "РЕДАКТИРОВАТЬ ТОВАР",
     reset: "СБРОС",
     deleteProduct: "УДАЛИТЬ",
     updateProduct: "ОБНОВИТЬ ТОВАР",
     saveProduct: "СОХРАНИТЬ ТОВАР",
-    orderTitle: "УПРАВЛЕНИЕ ЗАКАЗАМИ",
-    orderSubtitle: "Просмотр статусов, маршрутизация этапов и внутренние комментарии.",
-    comment: "КОММЕНТАРИЙ",
-    commentPlaceholder: "Заметка для персонала",
-    saveComment: "СОХРАНИТЬ КОММЕНТАРИЙ",
     price: "ЦЕНА",
     category: "CATEGORY ID",
     cover: "COVER URL",
@@ -126,32 +115,32 @@ const COPY: Record<
     inStock: "В НАЛИЧИИ",
     preorder: "ПРЕДЗАКАЗ",
     edit: "РЕДАКТ.",
-    orderStatus: "СТАТУС",
-    updateStatus: "ОБНОВИТЬ СТАТУС",
+    customer: "КЛИЕНТ",
+    status: "СТАТУС",
+    payment: "ОПЛАТА",
+    delivery: "ДОСТАВКА",
+    viewOnly: "VIEW ONLY",
   },
   kk: {
     shellTitle: "ӘКІМШІ",
-    shellSubtitle: "КАТАЛОГ / ТАПСЫРЫСТАР / ҚЫЗМЕТКЕРЛЕР",
+    shellSubtitle: "КАТАЛОГ / ВИТРИНА БАҚЫЛАУЫ / ТАПСЫРЫС ШОЛУЫ",
     webOnlyTitle: "WEB-ONLY ӘКІМШІ ПАНЕЛІ",
     webOnlySubtitle: "Бұл панель тек веб-нұсқадағы персоналға арналған.",
     catalog: "КАТАЛОГ",
     orders: "ТАПСЫРЫСТАР",
-    leadBadge: "ADMIN CONTROL / STAFF SURFACE",
-    leadTitle: "КАТАЛОГ ПЕН ТАПСЫРЫС СТАТУСТАРЫНА АРНАЛҒАН ТОЛЫҚ ВЕБ-ПАНЕЛЬ",
-    leadSubtitle: "Персонал тауарларды өңдеу және операциялық ағынды бақылау үшін бөлек жұмыс бетін алады.",
+    leadBadge: "ADMIN CONTROL / MERCHANDISING SURFACE",
+    leadTitle: "КАТАЛОГ, КОНТЕНТ ЖӘНЕ ТАПСЫРЫС КӨРІНІСІ ҮШІН БӨЛЕК ПАНЕЛЬ",
+    leadSubtitle: "Admin ассортимент пен витрина сапасын басқарады. Тапсырысты кезеңдерге жылжыту франчайзи мен өндірісте қалады.",
     catalogTitle: "КАТАЛОГ РЕДАКТОРЫ",
     catalogSubtitle: "Өлшемі, бағасы және медиасы бар өнім карталарын құру, жаңарту және жою.",
+    ordersTitle: "ТАПСЫРЫС СТАТУСТАРЫНЫҢ ШОЛУЫ",
+    ordersSubtitle: "Franchisee operational-role-ымен араластырмай, тапсырыс статустары мен клиенттік ағынның read-only көрінісі.",
     createProduct: "ӨНІМ ҚҰРУ",
     editProduct: "ӨНІМДІ ӨҢДЕУ",
     reset: "ТАСТАУ",
     deleteProduct: "ЖОЮ",
     updateProduct: "ӨНІМДІ ЖАҢАРТУ",
     saveProduct: "ӨНІМДІ САҚТАУ",
-    orderTitle: "ТАПСЫРЫСТАРДЫ БАСҚАРУ",
-    orderSubtitle: "Статустарды көру, кезеңдерді ауыстыру және ішкі пікірлер.",
-    comment: "ПІКІР",
-    commentPlaceholder: "Қызметкерлерге арналған белгі",
-    saveComment: "ПІКІРДІ САҚТАУ",
     price: "БАҒА",
     category: "CATEGORY ID",
     cover: "COVER URL",
@@ -168,32 +157,32 @@ const COPY: Record<
     inStock: "ДАЙЫН",
     preorder: "АЛДЫН АЛА ТАПСЫРЫС",
     edit: "ӨҢДЕУ",
-    orderStatus: "СТАТУС",
-    updateStatus: "СТАТУСТЫ ЖАҢАРТУ",
+    customer: "КЛИЕНТ",
+    status: "СТАТУС",
+    payment: "ТӨЛЕМ",
+    delivery: "ЖЕТКІЗУ",
+    viewOnly: "VIEW ONLY",
   },
   en: {
     shellTitle: "ADMIN",
-    shellSubtitle: "CATALOG / ORDERS / STAFF",
+    shellSubtitle: "CATALOG / STORE CONTROL / ORDER VISIBILITY",
     webOnlyTitle: "WEB-ONLY ADMIN",
     webOnlySubtitle: "This panel is intended strictly for the staff web experience.",
     catalog: "CATALOG",
     orders: "ORDERS",
-    leadBadge: "ADMIN CONTROL / STAFF SURFACE",
-    leadTitle: "A DEDICATED WEB PANEL FOR CATALOG EDITING AND ORDER STATUS CONTROL",
-    leadSubtitle: "Staff gets a separate surface for product editing and operational order oversight.",
+    leadBadge: "ADMIN CONTROL / MERCHANDISING SURFACE",
+    leadTitle: "A DISTINCT SURFACE FOR CATALOG, CONTENT AND ORDER VISIBILITY",
+    leadSubtitle: "Admin owns assortment and storefront quality. Operational order routing stays with franchisee and production.",
     catalogTitle: "CATALOG EDITOR",
     catalogSubtitle: "Create, update and remove product cards with sizing, price and media.",
+    ordersTitle: "ORDER STATUS OVERVIEW",
+    ordersSubtitle: "Read-only visibility into statuses and client orders without merging into the franchisee operational role.",
     createProduct: "CREATE PRODUCT",
     editProduct: "EDIT PRODUCT",
     reset: "RESET",
     deleteProduct: "DELETE PRODUCT",
     updateProduct: "UPDATE PRODUCT",
     saveProduct: "SAVE PRODUCT",
-    orderTitle: "ORDER MANAGEMENT",
-    orderSubtitle: "View statuses, route stages and leave internal comments.",
-    comment: "COMMENT",
-    commentPlaceholder: "Internal note for staff",
-    saveComment: "SAVE COMMENT",
     price: "PRICE",
     category: "CATEGORY ID",
     cover: "COVER URL",
@@ -210,13 +199,16 @@ const COPY: Record<
     inStock: "IN STOCK",
     preorder: "PREORDER",
     edit: "EDIT",
-    orderStatus: "STATUS",
-    updateStatus: "UPDATE STATUS",
+    customer: "CUSTOMER",
+    status: "STATUS",
+    payment: "PAYMENT",
+    delivery: "DELIVERY",
+    viewOnly: "VIEW ONLY",
   },
 };
 
 export default function AdminScreen() {
-  const redirect = useRequireRole("franchisee");
+  const redirect = useRequireRole("admin");
   const theme = useResolvedTheme();
   const language = useAppStore((state) => state.language);
   const products = useAppStore((state) => state.products);
@@ -225,13 +217,10 @@ export default function AdminScreen() {
   const createProduct = useAppStore((state) => state.createProduct);
   const updateProduct = useAppStore((state) => state.updateProduct);
   const deleteProduct = useAppStore((state) => state.deleteProduct);
-  const updateOrderStatus = useAppStore((state) => state.updateOrderStatus);
-  const addOrderComment = useAppStore((state) => state.addOrderComment);
   const copy = COPY[language];
 
   const [tab, setTab] = useState<AdminTab>("catalog");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [productForm, setProductForm] = useState<ProductUpsertPayload>(EMPTY_PRODUCT_FORM);
 
   const featuredProduct = useMemo(
@@ -511,7 +500,7 @@ export default function AdminScreen() {
 
         {tab === "orders" ? (
           <Panel style={styles.ordersPanel}>
-            <SectionHeading title={copy.orderTitle} subtitle={copy.orderSubtitle} compact />
+            <SectionHeading title={copy.ordersTitle} subtitle={copy.ordersSubtitle} compact />
             <View style={styles.orderList}>
               {orders.map((order) => (
                 <View
@@ -530,48 +519,19 @@ export default function AdminScreen() {
                         {order.number}
                       </Text>
                       <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
-                        {order.productName} / {order.customerName}
+                        {copy.customer} / {order.customerName}
                       </Text>
                       <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
-                        {copy.orderStatus} / {order.status.toUpperCase()}
+                        {copy.status} / {order.status.replaceAll("_", " ").toUpperCase()}
+                      </Text>
+                      <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
+                        {copy.payment} / {order.paymentMethod.toUpperCase()}
+                      </Text>
+                      <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
+                        {copy.delivery} / {order.deliveryMethod.toUpperCase()}
                       </Text>
                     </View>
-                    <StatusPill label={order.paymentMethod.toUpperCase()} tone="ghost" />
-                  </View>
-
-                  <View style={styles.statusRow}>
-                    {ORDER_STATUSES.map((status) => (
-                      <ChoiceChip
-                        key={status}
-                        label={status.replaceAll("_", " ").toUpperCase()}
-                        active={order.status === status}
-                        onPress={() => updateOrderStatus(order.id, status)}
-                      />
-                    ))}
-                  </View>
-
-                  <MonoInput
-                    label={copy.comment}
-                    value={commentDrafts[order.id] ?? ""}
-                    onChangeText={(value) =>
-                      setCommentDrafts((current) => ({ ...current, [order.id]: value }))
-                    }
-                    placeholder={copy.commentPlaceholder}
-                  />
-
-                  <View style={styles.buttonRow}>
-                    <MonoButton
-                      label={copy.saveComment}
-                      variant="secondary"
-                      onPress={async () => {
-                        const message = commentDrafts[order.id]?.trim();
-                        if (!message) {
-                          return;
-                        }
-                        await addOrderComment(order.id, message);
-                        setCommentDrafts((current) => ({ ...current, [order.id]: "" }));
-                      }}
-                    />
+                    <StatusPill label={copy.viewOnly} tone="ghost" />
                   </View>
                 </View>
               ))}
@@ -730,10 +690,5 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_500Medium",
     fontSize: 13,
     lineHeight: 20,
-  },
-  statusRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
   },
 });

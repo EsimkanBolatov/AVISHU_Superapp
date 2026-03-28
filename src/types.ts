@@ -1,4 +1,4 @@
-export type Role = "client" | "franchisee" | "production";
+export type Role = "client" | "admin" | "franchisee" | "production";
 
 export type ProductAvailability = "in_stock" | "preorder";
 

@@ -7,7 +7,7 @@ import { MonoButton } from "../src/components/MonoButton";
 import { Panel } from "../src/components/Panel";
 import { StatusPill } from "../src/components/StatusPill";
 import { ThemeSwitch } from "../src/components/ThemeSwitch";
-import { referenceTechJacket } from "../src/lib/brandArt";
+import { landingHeroArt } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
 import { AppLanguage } from "../src/types";
@@ -110,6 +110,10 @@ export default function IndexScreen() {
     return <Redirect href="/franchisee" />;
   }
 
+  if (user?.role === "admin") {
+    return <Redirect href="/admin" />;
+  }
+
   if (user?.role === "production") {
     return <Redirect href="/production" />;
   }
@@ -160,7 +164,7 @@ export default function IndexScreen() {
               ]}
             />
             <View style={[styles.imageMask, { backgroundColor: theme.colors.surfaceSecondary }]}>
-              <Image source={referenceTechJacket} style={styles.heroImage} resizeMode="cover" />
+              <Image source={landingHeroArt} style={styles.heroImage} resizeMode="cover" />
               <View style={[styles.imageVeil, { backgroundColor: theme.colors.backgroundSecondary }]} />
             </View>
             <View style={styles.heroOverlayTop}>

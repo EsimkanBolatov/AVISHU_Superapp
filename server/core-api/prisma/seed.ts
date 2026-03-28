@@ -38,6 +38,17 @@ async function main() {
         loyaltyProgress: 72,
       },
       {
+        id: "u-admin-001",
+        email: "admin@avishu.kz",
+        passwordHash: hashPassword("Admin123!"),
+        name: "Aruzhan D.",
+        role: "admin",
+        phone: "+7 701 900 44 11",
+        avatarUrl:
+          "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=400&q=80",
+        loyaltyProgress: 100,
+      },
+      {
         id: "u-franchisee-001",
         email: "franchisee@avishu.kz",
         passwordHash: hashPassword("Franchisee123!"),
@@ -313,11 +324,17 @@ async function main() {
       {
         id: "oc-001",
         orderId: "o-001",
+        authorId: "u-admin-001",
+        message: "Catalog card verified and client order packaged into the premium flow.",
+      },
+      {
+        id: "oc-002",
+        orderId: "o-001",
         authorId: "u-franchisee-001",
         message: "Order approved and handed to production queue.",
       },
       {
-        id: "oc-002",
+        id: "oc-003",
         orderId: "o-001",
         authorId: "u-production-001",
         message: "Main shell cut complete. Waiting for QC review.",

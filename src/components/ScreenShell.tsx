@@ -1,5 +1,5 @@
 import { PropsWithChildren, useMemo } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, usePathname } from "expo-router";
 
@@ -59,8 +59,12 @@ function getRoleRoute(role?: Role | null) {
     return "/client";
   }
 
+  if (role === "admin") {
+    return "/admin";
+  }
+
   if (role === "franchisee") {
-    return Platform.OS === "web" ? "/admin" : "/franchisee";
+    return "/franchisee";
   }
 
   return "/production";
@@ -78,10 +82,12 @@ export function ScreenShell({
 }>) {
   const theme = useResolvedTheme();
   const pathname = usePathname();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const user = useAppStore((state) => state.user);
   const cartItems = useAppStore((state) => state.cartItems);
   const copy = COPY[language];
+  const isCompact = width < 760;
 
   const shortcuts = useMemo(() => {
     const items: Array<{ key: string; label: string; route: string; count?: number }> = [
@@ -116,7 +122,7 @@ export function ScreenShell({
         });
       }
 
-      if (user.role === "franchisee" && Platform.OS === "web") {
+      if (user.role === "admin" && Platform.OS === "web") {
         items.push({
           key: "admin",
           label: copy.admin,
@@ -130,10 +136,11 @@ export function ScreenShell({
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.frame}>
+      <View style={[styles.frame, isCompact && styles.frameCompact]}>
         <View
           style={[
             styles.topbar,
+            isCompact && styles.topbarCompact,
             {
               borderColor: theme.colors.borderSoft,
               backgroundColor: theme.colors.surface,
@@ -145,7 +152,15 @@ export function ScreenShell({
             <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
               {subtitle}
             </Text>
-            <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+            <Text
+              style={[
+                styles.title,
+                isCompact && styles.titleCompact,
+                { color: theme.colors.textPrimary },
+              ]}
+            >
+              {title}
+            </Text>
           </View>
 
           <View style={styles.topbarRight}>
@@ -233,6 +248,12 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
     gap: 18,
   },
+  frameCompact: {
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 14,
+    gap: 14,
+  },
   topbar: {
     borderWidth: 1,
     borderRadius: 32,
@@ -243,6 +264,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 18,
     alignItems: "flex-start",
+  },
+  topbarCompact: {
+    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 14,
   },
   titleBlock: {
     flex: 1,
@@ -264,6 +291,11 @@ const styles = StyleSheet.create({
     fontSize: 58,
     lineHeight: 62,
     letterSpacing: 1.6,
+  },
+  titleCompact: {
+    fontSize: 40,
+    lineHeight: 42,
+    letterSpacing: 1.1,
   },
   topbarRight: {
     flex: 1,

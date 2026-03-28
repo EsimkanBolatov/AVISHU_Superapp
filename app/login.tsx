@@ -10,7 +10,7 @@ import { MonoInput } from "../src/components/MonoInput";
 import { Panel } from "../src/components/Panel";
 import { StatusPill } from "../src/components/StatusPill";
 import { ThemeSwitch } from "../src/components/ThemeSwitch";
-import { referenceTechJacket } from "../src/lib/brandArt";
+import { loginHeroArt } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
 import { AppLanguage } from "../src/types";
@@ -20,6 +20,11 @@ const ACCESS_PRESETS = [
     label: "CLIENT",
     email: "client@avishu.kz",
     password: "Client123!",
+  },
+  {
+    label: "ADMIN",
+    email: "admin@avishu.kz",
+    password: "Admin123!",
   },
   {
     label: "FRANCHISEE",
@@ -163,9 +168,11 @@ export default function LoginScreen() {
     router.replace(
       currentUser.role === "client"
         ? "/client"
-        : currentUser.role === "franchisee"
-          ? (Platform.OS === "web" ? "/admin" : "/franchisee")
-          : "/production",
+        : currentUser.role === "admin"
+          ? "/admin"
+          : currentUser.role === "franchisee"
+            ? "/franchisee"
+            : "/production",
     );
   };
 
@@ -281,7 +288,7 @@ export default function LoginScreen() {
 
             <View style={[styles.visualFrame, { borderColor: theme.colors.borderSoft }]}>
               <View style={[styles.visualInner, { backgroundColor: theme.colors.surfaceSecondary }]}>
-                <Image source={referenceTechJacket} style={styles.imageFill} resizeMode="cover" />
+                <Image source={loginHeroArt} style={styles.imageFill} resizeMode="cover" />
                 <View
                   style={[
                     styles.visualVeil,
