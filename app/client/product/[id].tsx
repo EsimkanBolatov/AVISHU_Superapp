@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ScreenShell } from "../../../src/components/ScreenShell";
 import { ProductDetailExperience } from "../../../src/features/client/product/ProductDetailExperience";
@@ -20,6 +20,13 @@ const COPY: Record<
     fitNotes: string;
     delivery: string;
     style: string;
+    care: string;
+    sizeGuide: string;
+    editorialStory: string;
+    relatedLooks: string;
+    crossSell: string;
+    favorite: string;
+    unfavorite: string;
     sizeSelection: string;
     selectDelivery: string;
     gallery: string;
@@ -46,20 +53,27 @@ const COPY: Record<
     fitNotes: "Посадка",
     delivery: "Доставка",
     style: "Стиль / stock",
+    care: "Уход",
+    sizeGuide: "Гид по размеру",
+    editorialStory: "Editorial story",
+    relatedLooks: "Related looks",
+    crossSell: "Cross-sell",
+    favorite: "В избранное",
+    unfavorite: "Убрать из избранного",
     sizeSelection: "Выбор размера",
-    selectDelivery: "Выбери окно доставки",
+    selectDelivery: "Окно доставки",
     gallery: "LOOK",
     tryOnTitle: "AI try-on pipeline",
-    tryOnSubtitle: "Сохрани примерку, чтобы затем связать ее с корзиной и checkout-потоком.",
-    sourceImage: "Ссылка на исходное фото",
+    tryOnSubtitle: "Сохрани примерку и свяжи ее с корзиной и checkout.",
+    sourceImage: "Ссылка на фото",
     sourceImagePlaceholder: "https://...",
     tryOnHistory: "История try-on",
     generate: "Создать try-on",
     generating: "Генерация...",
     ready: "Готово к отправке",
-    preorder: "Позиция по предзаказу",
-    addToCart: "Добавить в корзину",
-    continue: "Перейти к checkout",
+    preorder: "Предзаказ",
+    addToCart: "В корзину",
+    continue: "К checkout",
     back: "Назад",
     cart: "Открыть корзину",
   },
@@ -71,18 +85,25 @@ const COPY: Record<
     fitNotes: "Отырымы",
     delivery: "Жеткізу",
     style: "Стиль / stock",
-    sizeSelection: "Өлшемді таңдау",
-    selectDelivery: "Жеткізу уақытын таңда",
+    care: "Күтім",
+    sizeGuide: "Өлшем гиді",
+    editorialStory: "Editorial story",
+    relatedLooks: "Related looks",
+    crossSell: "Cross-sell",
+    favorite: "Таңдалғанға қосу",
+    unfavorite: "Таңдалғаннан алып тастау",
+    sizeSelection: "Өлшем таңдау",
+    selectDelivery: "Жеткізу уақыты",
     gallery: "LOOK",
     tryOnTitle: "AI try-on pipeline",
-    tryOnSubtitle: "Себет пен checkout ағынына байлау үшін fitting preview сақта.",
-    sourceImage: "Бастапқы фото сілтемесі",
+    tryOnSubtitle: "Preview жасап, оны себет пен checkout ағымына байланыстыр.",
+    sourceImage: "Фото сілтемесі",
     sourceImagePlaceholder: "https://...",
     tryOnHistory: "Try-on тарихы",
     generate: "Try-on жасау",
     generating: "Жасалуда...",
     ready: "Жөнелтуге дайын",
-    preorder: "Алдын ала тапсырыс позициясы",
+    preorder: "Алдын ала тапсырыс",
     addToCart: "Себетке қосу",
     continue: "Checkout-қа өту",
     back: "Артқа",
@@ -96,11 +117,18 @@ const COPY: Record<
     fitNotes: "Fit notes",
     delivery: "Delivery",
     style: "Style / stock",
+    care: "Care instructions",
+    sizeGuide: "Size guide",
+    editorialStory: "Editorial story",
+    relatedLooks: "Related looks",
+    crossSell: "Cross-sell",
+    favorite: "Save to favorites",
+    unfavorite: "Remove favorite",
     sizeSelection: "Size selection",
     selectDelivery: "Select delivery window",
     gallery: "LOOK",
     tryOnTitle: "AI try-on pipeline",
-    tryOnSubtitle: "Save a fitting preview first so it can travel with the cart and checkout flow.",
+    tryOnSubtitle: "Save a preview so it can travel into cart and checkout.",
     sourceImage: "Source image URL",
     sourceImagePlaceholder: "https://...",
     tryOnHistory: "Try-on history",
@@ -124,6 +152,9 @@ export default function ProductDetailScreen() {
   const createTryOn = useAppStore((state) => state.createTryOn);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const addToCart = useAppStore((state) => state.addToCart);
+  const favorites = useAppStore((state) => state.favorites);
+  const toggleFavorite = useAppStore((state) => state.toggleFavorite);
+  const trackProductView = useAppStore((state) => state.trackProductView);
   const copy = COPY[language];
 
   const [selectedDate, setSelectedDate] = useState(DELIVERY_OPTIONS[0]);
@@ -142,6 +173,32 @@ export default function ProductDetailScreen() {
     () => tryOnSessions.filter((session) => session.productId === product?.id),
     [product?.id, tryOnSessions],
   );
+
+  const isFavorite = Boolean(product && favorites.some((favorite) => favorite.productId === product.id));
+  const relatedProducts = useMemo(
+    () =>
+      (product?.relatedProductIds ?? [])
+        .map((id) => products.find((item) => item.id === id))
+        .filter(Boolean)
+        .slice(0, 4),
+    [product?.relatedProductIds, products],
+  );
+  const crossSellProducts = useMemo(
+    () =>
+      (product?.crossSellProductIds ?? [])
+        .map((id) => products.find((item) => item.id === id))
+        .filter(Boolean)
+        .slice(0, 4),
+    [product?.crossSellProductIds, products],
+  );
+
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    void trackProductView(product.id);
+  }, [product, trackProductView]);
 
   if (redirect) {
     return redirect;
@@ -170,6 +227,9 @@ export default function ProductDetailScreen() {
         submittingTryOn={submittingTryOn}
         productTryOns={productTryOns}
         styleLabels={product.style.map((style) => getStyleLabel(style, language))}
+        isFavorite={isFavorite}
+        relatedProducts={relatedProducts}
+        crossSellProducts={crossSellProducts}
         onSelectMedia={setActiveMediaIndex}
         onSelectVariant={setSelectedVariantId}
         onSelectDate={setSelectedDate}
@@ -195,6 +255,10 @@ export default function ProductDetailScreen() {
             setSubmittingTryOn(false);
           }
         }}
+        onToggleFavorite={async () => {
+          await toggleFavorite(product.id);
+        }}
+        onOpenProduct={(productId) => router.push(`/client/product/${productId}`)}
         onAddToCart={() => {
           if (!selectedVariant) {
             return;

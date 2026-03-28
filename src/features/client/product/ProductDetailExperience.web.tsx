@@ -24,12 +24,17 @@ export function ProductDetailExperience({
   submittingTryOn,
   productTryOns,
   styleLabels,
+  isFavorite,
+  relatedProducts,
+  crossSellProducts,
   onSelectMedia,
   onSelectVariant,
   onSelectDate,
   onSelectTryOn,
   onPhotoUrlChange,
   onCreateTryOn,
+  onToggleFavorite,
+  onOpenProduct,
   onAddToCart,
   onContinue,
   onOpenCart,
@@ -81,6 +86,14 @@ export function ProductDetailExperience({
             ))}
           </View>
 
+          <MonoButton
+            label={isFavorite ? copy.unfavorite : copy.favorite}
+            variant="secondary"
+            onPress={() => {
+              void onToggleFavorite();
+            }}
+          />
+
           <View style={styles.metaRows}>
             {[
               [copy.category, product.categoryName],
@@ -88,6 +101,9 @@ export function ProductDetailExperience({
               [copy.fitNotes, product.fittingNotes],
               [copy.delivery, product.deliveryEstimate],
               [copy.style, `${getProductStock(product)} / ${product.variants.length}`],
+              [copy.care, product.careInstructions],
+              [copy.sizeGuide, product.sizeGuide],
+              [copy.editorialStory, product.editorialStory],
             ].map(([label, value]) => (
               <View key={label} style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
                 <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{label}</Text>
@@ -169,6 +185,24 @@ export function ProductDetailExperience({
             <MonoButton label={copy.cart} variant="secondary" onPress={onOpenCart} />
             <MonoButton label={copy.back} variant="secondary" onPress={onBack} />
           </View>
+
+          <Panel style={styles.relatedPanel}>
+            <SectionHeading title={copy.relatedLooks} subtitle={product.collectionName} compact />
+            <View style={styles.chipRow}>
+              {relatedProducts.map((item) => (
+                <ChoiceChip key={item.id} label={item.name} active={false} onPress={() => onOpenProduct(item.id)} />
+              ))}
+            </View>
+          </Panel>
+
+          <Panel style={styles.relatedPanel}>
+            <SectionHeading title={copy.crossSell} subtitle={product.dropName} compact />
+            <View style={styles.chipRow}>
+              {crossSellProducts.map((item) => (
+                <ChoiceChip key={item.id} label={item.name} active={false} onPress={() => onOpenProduct(item.id)} />
+              ))}
+            </View>
+          </Panel>
         </Panel>
       </View>
     </ScrollView>
@@ -282,5 +316,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+  },
+  relatedPanel: {
+    gap: 12,
   },
 });
