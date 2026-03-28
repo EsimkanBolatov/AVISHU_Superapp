@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { ChoiceChip } from "../../src/components/ChoiceChip";
 import { MonoButton } from "../../src/components/MonoButton";
@@ -103,6 +103,7 @@ const COPY: Record<
 export default function ClientScreen() {
   const redirect = useRequireRole("client");
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const categories = useAppStore((state) => state.categories);
   const products = useAppStore((state) => state.products);
@@ -111,6 +112,7 @@ export default function ClientScreen() {
   const user = useAppStore((state) => state.user);
   const cartItems = useAppStore((state) => state.cartItems);
   const copy = COPY[language];
+  const isCompact = width < 760;
 
   if (redirect) {
     return redirect;
@@ -123,10 +125,10 @@ export default function ClientScreen() {
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle} profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {featuredProduct ? (
-          <Panel style={styles.heroPanel}>
-            <View style={styles.heroCopy}>
+          <Panel style={[styles.heroPanel, isCompact && styles.heroPanelCompact]}>
+            <View style={[styles.heroCopy, isCompact && styles.heroCopyCompact]}>
               <StatusPill label={copy.heroBadge} tone="solid" />
-              <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>
+              <Text style={[styles.heroTitle, isCompact && styles.heroTitleCompact, { color: theme.colors.textPrimary }]}>
                 {featuredProduct.name.toUpperCase()}
               </Text>
               <Text style={[styles.heroText, { color: theme.colors.textSecondary }]}>
@@ -164,7 +166,7 @@ export default function ClientScreen() {
               </View>
             </View>
 
-            <View style={styles.heroVisualWrap}>
+            <View style={[styles.heroVisualWrap, isCompact && styles.heroVisualWrapCompact]}>
               <View style={[styles.heroGlow, { backgroundColor: theme.colors.glow }]} />
               <View style={[styles.heroVisual, { borderColor: theme.colors.borderSoft }]}>
                 <Image
@@ -279,16 +281,26 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     overflow: "hidden",
   },
+  heroPanelCompact: {
+    gap: 14,
+  },
   heroCopy: {
     flex: 0.9,
     minWidth: 280,
     gap: 16,
+  },
+  heroCopyCompact: {
+    minWidth: "100%",
   },
   heroTitle: {
     fontFamily: "Oswald_500Medium",
     fontSize: 56,
     lineHeight: 60,
     letterSpacing: 1,
+  },
+  heroTitleCompact: {
+    fontSize: 40,
+    lineHeight: 42,
   },
   heroText: {
     fontFamily: "SpaceGrotesk_400Regular",
@@ -326,6 +338,10 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 320,
     minHeight: 760,
+  },
+  heroVisualWrapCompact: {
+    minWidth: "100%",
+    minHeight: 480,
   },
   heroGlow: {
     position: "absolute",

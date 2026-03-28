@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { ChoiceChip } from "../../../src/components/ChoiceChip";
 import { MonoButton } from "../../../src/components/MonoButton";
@@ -142,6 +142,7 @@ const COPY: Record<
 export default function CheckoutScreen() {
   const redirect = useRequireRole("client");
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const params = useLocalSearchParams<{
     id: string;
@@ -154,6 +155,7 @@ export default function CheckoutScreen() {
   const user = useAppStore((state) => state.user);
   const placeOrder = useAppStore((state) => state.placeOrder);
   const copy = COPY[language];
+  const isCompact = width < 760;
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("kaspi");
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("courier");
   const [shippingAddress, setShippingAddress] = useState(user?.defaultShippingAddress ?? "");
@@ -190,7 +192,7 @@ export default function CheckoutScreen() {
               <Text style={[styles.headerMeta, { color: theme.colors.textMuted }]}>{copy.headerMeta}</Text>
             </View>
 
-            <View style={styles.grid}>
+            <View style={[styles.grid, isCompact && styles.gridCompact]}>
               <View style={[styles.checkoutVisual, { borderColor: theme.colors.borderSoft }]}>
                 <Image
                   source={existingOrder.productMediaUrl ? { uri: existingOrder.productMediaUrl } : referenceTechJacket}
@@ -245,7 +247,7 @@ export default function CheckoutScreen() {
   return (
     <ScreenShell title={copy.shellPayment} subtitle={product.name} profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.grid}>
+        <View style={[styles.grid, isCompact && styles.gridCompact]}>
           <Panel style={styles.checkoutVisual}>
             <Image
               source={product.media[0]?.url ? { uri: product.media[0].url } : referenceTechJacket}
@@ -402,6 +404,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 18,
+  },
+  gridCompact: {
+    gap: 14,
   },
   checkoutVisual: {
     flex: 0.9,

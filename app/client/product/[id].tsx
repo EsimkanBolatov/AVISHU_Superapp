@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { ChoiceChip } from "../../../src/components/ChoiceChip";
 import { MonoButton } from "../../../src/components/MonoButton";
@@ -110,6 +110,7 @@ export default function ProductDetailScreen() {
   const redirect = useRequireRole("client");
   const router = useRouter();
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const params = useLocalSearchParams<{ id: string }>();
   const products = useAppStore((state) => state.products);
@@ -117,6 +118,7 @@ export default function ProductDetailScreen() {
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const addToCart = useAppStore((state) => state.addToCart);
   const copy = COPY[language];
+  const isCompact = width < 760;
   const [selectedDate, setSelectedDate] = useState(DELIVERY_OPTIONS[0]);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -171,7 +173,7 @@ export default function ProductDetailScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.grid}>
           <Panel style={styles.visualPanel}>
-            <View style={[styles.visualBlock, { borderColor: theme.colors.borderSoft }]}>
+            <View style={[styles.visualBlock, isCompact && styles.visualBlockCompact, { borderColor: theme.colors.borderSoft }]}>
               <Image source={activeMedia} style={styles.visualImage} resizeMode="cover" />
 
               <View style={styles.visualTop}>
@@ -204,7 +206,7 @@ export default function ProductDetailScreen() {
 
           <Panel style={styles.detailsPanel}>
             <SectionHeading title={product.name.toUpperCase()} subtitle={product.description} />
-            <Text style={[styles.price, { color: theme.colors.textPrimary }]}>{product.formattedPrice}</Text>
+            <Text style={[styles.price, isCompact && styles.priceCompact, { color: theme.colors.textPrimary }]}>{product.formattedPrice}</Text>
 
             <View style={styles.metaRows}>
               {[
@@ -343,6 +345,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: "hidden",
   },
+  visualBlockCompact: {
+    minHeight: 420,
+  },
   visualImage: {
     width: "100%",
     height: "100%",
@@ -393,6 +398,9 @@ const styles = StyleSheet.create({
     fontFamily: "Oswald_500Medium",
     fontSize: 42,
     letterSpacing: 1.4,
+  },
+  priceCompact: {
+    fontSize: 34,
   },
   metaRows: {
     gap: 14,

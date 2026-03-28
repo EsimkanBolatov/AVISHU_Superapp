@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { ChoiceChip } from "../../src/components/ChoiceChip";
 import { MonoButton } from "../../src/components/MonoButton";
@@ -138,6 +138,7 @@ const COPY: Record<
 export default function CartScreen() {
   const redirect = useRequireRole("client");
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const cartItems = useAppStore((state) => state.cartItems);
   const products = useAppStore((state) => state.products);
@@ -147,6 +148,7 @@ export default function CartScreen() {
   const clearCart = useAppStore((state) => state.clearCart);
   const placeOrder = useAppStore((state) => state.placeOrder);
   const copy = COPY[language];
+  const isCompact = width < 760;
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("kaspi");
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("courier");
@@ -205,7 +207,7 @@ export default function CartScreen() {
   return (
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle} profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.grid}>
+        <View style={[styles.grid, isCompact && styles.gridCompact]}>
           <Panel style={styles.listPanel}>
             <SectionHeading title={copy.cartTitle} subtitle={copy.cartSubtitle} compact />
 
@@ -220,6 +222,7 @@ export default function CartScreen() {
                     key={entry.item.id}
                     style={[
                       styles.itemCard,
+                      isCompact && styles.itemCardCompact,
                       {
                         borderColor: theme.colors.borderSoft,
                         backgroundColor: theme.colors.surfaceSecondary,
@@ -228,7 +231,7 @@ export default function CartScreen() {
                   >
                     <Image
                       source={entry.product.media[0]?.url ? { uri: entry.product.media[0].url } : referenceTechJacket}
-                      style={styles.itemImage}
+                      style={[styles.itemImage, isCompact && styles.itemImageCompact]}
                       resizeMode="cover"
                     />
 
@@ -400,6 +403,9 @@ const styles = StyleSheet.create({
     gap: 18,
     alignItems: "flex-start",
   },
+  gridCompact: {
+    gap: 14,
+  },
   listPanel: {
     flex: 1.05,
     minWidth: 320,
@@ -417,10 +423,17 @@ const styles = StyleSheet.create({
     gap: 14,
     alignItems: "center",
   },
+  itemCardCompact: {
+    alignItems: "stretch",
+  },
   itemImage: {
     width: 118,
     height: 150,
     borderRadius: 18,
+  },
+  itemImageCompact: {
+    width: "100%",
+    height: 220,
   },
   itemCopy: {
     flex: 1,

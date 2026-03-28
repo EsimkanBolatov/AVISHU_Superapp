@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { referenceTechJacket } from "../lib/brandArt";
 import { useResolvedTheme } from "../lib/theme";
@@ -43,8 +43,10 @@ export function ProductCard({
   product: Product;
 }) {
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const copy = COPY[language];
+  const isCompact = width < 760;
   const coverImage = product.media[0]?.url
     ? { uri: product.media[0].url }
     : referenceTechJacket;
@@ -54,13 +56,14 @@ export function ProductCard({
       onPress={onPress}
       style={[
         styles.card,
+        isCompact && styles.cardCompact,
         {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.borderSoft,
         },
       ]}
     >
-      <View style={[styles.visualWrap, { borderColor: theme.colors.borderSoft }]}>
+      <View style={[styles.visualWrap, isCompact && styles.visualWrapCompact, { borderColor: theme.colors.borderSoft }]}>
         <View style={[styles.glow, { backgroundColor: theme.colors.glow }]} />
         <Image source={coverImage} style={styles.image} resizeMode="cover" />
         <View
@@ -82,9 +85,9 @@ export function ProductCard({
         </View>
       </View>
 
-      <View style={styles.content}>
+        <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{product.name}</Text>
+          <Text style={[styles.title, isCompact && styles.titleCompact, { color: theme.colors.textPrimary }]}>{product.name}</Text>
           <Text style={[styles.price, { color: theme.colors.textPrimary }]}>
             {product.formattedPrice}
           </Text>
@@ -123,11 +126,18 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     minHeight: 560,
   },
+  cardCompact: {
+    flexBasis: "100%",
+    minHeight: 470,
+  },
   visualWrap: {
     height: 350,
     borderBottomWidth: 1,
     overflow: "hidden",
     justifyContent: "space-between",
+  },
+  visualWrapCompact: {
+    height: 270,
   },
   glow: {
     position: "absolute",
@@ -190,6 +200,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: 0.9,
+  },
+  titleCompact: {
+    fontSize: 24,
+    lineHeight: 28,
   },
   price: {
     fontFamily: "SpaceGrotesk_700Bold",
