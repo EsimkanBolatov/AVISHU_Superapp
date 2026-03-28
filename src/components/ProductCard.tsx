@@ -155,7 +155,8 @@ const styles = StyleSheet.create({
   cardMobile: {
     width: "48%", 
     minHeight: 0,
-    borderRadius: 16, 
+    borderRadius: 16,
+    overflow: "hidden", 
   },
   visualWrap: {
     height: 360,
@@ -164,7 +165,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   visualWrapMobile: {
-    height: 160, 
+    height: 140,
+    borderWidth: 0, 
   },
   glow: {
     position: "absolute",
@@ -220,8 +222,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   contentMobile: {
-    padding: 12, 
-    gap: 8,
+    padding: 10, 
+    gap: 6, 
   },
   header: {
     gap: 8,
@@ -233,8 +235,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
   },
   titleMobile: {
-    fontSize: 16, 
-    lineHeight: 20,
+    fontSize: 14, 
+    lineHeight: 18,
   },
   price: {
     fontFamily: "SpaceGrotesk_700Bold",

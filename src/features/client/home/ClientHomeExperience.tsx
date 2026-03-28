@@ -308,6 +308,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", 
     flexWrap: "wrap",     
     justifyContent: "space-between",
-    gap: 12,
+    paddingHorizontal: 16, 
+    gap: 12, 
   },
 });
