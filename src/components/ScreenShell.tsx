@@ -1,6 +1,6 @@
 import { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, usePathname } from "expo-router";
 
 import { LanguageSwitch } from "./LanguageSwitch";
@@ -133,6 +133,7 @@ export function ScreenShell({
   const theme = useResolvedTheme();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const language = useAppStore((state) => state.language);
   const user = useAppStore((state) => state.user);
   const cartItems = useAppStore((state) => state.cartItems);
@@ -217,8 +218,14 @@ export function ScreenShell({
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.frame, isCompact && styles.frameCompact]}>
+    <View style={[styles.safe, { backgroundColor: theme.colors.background }]}>
+      <View 
+        style={[
+          styles.frame, 
+          isCompact && styles.frameCompact,
+          { paddingTop: Math.max(insets.top, 16), paddingBottom: 0 }
+        ]}
+      >
         <View style={styles.viewport}>
           <View
             style={[
@@ -226,7 +233,7 @@ export function ScreenShell({
               isCompact && styles.topbarCompact,
               !isCompact && desktopHeaderCollapsed && styles.topbarCollapsed,
               {
-                borderColor: theme.colors.borderSoft,
+                // Убрали borderColor, оставили только фон
                 backgroundColor: theme.colors.surface,
               },
             ]}
@@ -387,8 +394,7 @@ export function ScreenShell({
               </Pressable>
             </View>
           ) : null}
-
-          <View style={[styles.content, isCompact && bottomNavItems.length > 0 && styles.contentWithBottomNav]}>
+          <View style={styles.content}>
             {children}
           </View>
         </View>
@@ -399,8 +405,9 @@ export function ScreenShell({
           style={[
             styles.bottomNav,
             {
-              borderColor: theme.colors.borderSoft,
+              // Убрали borderColor, оставили только фон
               backgroundColor: theme.colors.surface,
+              bottom: Math.max(insets.bottom, 12),
             },
           ]}
         >
@@ -429,34 +436,44 @@ export function ScreenShell({
           })}
         </View>
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  frame: { flex: 1, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 22 },
-  frameCompact: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
+  frame: { flex: 1, paddingHorizontal: 20 },
+  frameCompact: { paddingHorizontal: 12 },
   viewport: { flex: 1, width: "100%", maxWidth: SHELL_MAX_WIDTH, alignSelf: "center", gap: 18 },
   topbar: {
     width: "100%",
-    borderWidth: 1,
+    // Убрали borderWidth: 1
     borderRadius: 32,
-    paddingHorizontal: 28,
-    paddingVertical: 24,
+    paddingHorizontal: 24, 
+    paddingVertical: 20,   
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     gap: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 12, 
   },
   topbarCompact: {
-    borderRadius: 22,
+    borderRadius: 28, 
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 16,
     flexDirection: "column",
     alignItems: "stretch",
     justifyContent: "flex-start",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8, 
   },
   topbarCollapsed: { paddingHorizontal: 24, paddingVertical: 16, gap: 12 },
   topbarLead: { gap: 8 },
@@ -510,23 +527,27 @@ const styles = StyleSheet.create({
   dismissButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10 },
   dismissLabel: { fontFamily: "SpaceGrotesk_700Bold", fontSize: 10, letterSpacing: 1.2 },
   content: { flex: 1, width: "100%", minHeight: 0 },
-  contentWithBottomNav: { paddingBottom: 76 },
+  contentWithBottomNav: {},
   bottomNav: {
     position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 12,
-    borderWidth: 1,
-    borderRadius: 22,
+    left: 16, 
+    right: 16,
+    // Убрали borderWidth: 1
+    borderRadius: 32, 
     padding: 8,
     flexDirection: "row",
     gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10, 
   },
   bottomNavItem: {
     flex: 1,
     minHeight: 54,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 24, 
     alignItems: "center",
     justifyContent: "center",
     gap: 4,

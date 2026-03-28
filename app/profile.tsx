@@ -291,8 +291,11 @@ export default function ProfileScreen() {
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.identity}>
+          {/* Обновляем контейнеры в Panel */}
           <View style={[styles.identityGrid, isCompact && styles.identityGridCompact]}>
-            <View style={styles.identityCopy}>
+            
+            {/* Добавили isCompact && styles.identityCopyCompact */}
+            <View style={[styles.identityCopy, isCompact && styles.identityCopyCompact]}>
               <StatusPill label={`${user.role.toUpperCase()} / LIVE ACCOUNT`} tone="solid" />
               <Text style={[styles.name, isCompact && styles.nameCompact, { color: theme.colors.textPrimary }]}>
                 {user.name.toUpperCase()}
@@ -539,11 +542,16 @@ const styles = StyleSheet.create({
   },
   identityGridCompact: {
     flexDirection: "column-reverse",
+    flexWrap: "nowrap", 
   },
   identityCopy: {
     flex: 1,
     minWidth: 300,
     gap: 16,
+  },
+  identityCopyCompact: {
+    minWidth: "100%", 
+    flex: 0, 
   },
   name: {
     fontFamily: "Oswald_500Medium",
@@ -584,10 +592,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   identityVisualCompact: {
+    flex: 0,
+    width: "100%",
     minWidth: "100%",
-    minHeight: 260,
+    height: 380, 
   },
   visualImage: {
+    flex: 1,
     width: "100%",
     height: "100%",
   },
