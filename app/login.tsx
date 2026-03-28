@@ -333,6 +333,9 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: "center",
   },
+  topbarCompact: {
+    alignItems: "flex-start",
+  },
   topbarRight: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -343,6 +346,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 18,
+  },
+  gridCompact: {
+    gap: 14,
   },
   leftPanel: {
     flex: 1.02,
@@ -356,10 +362,19 @@ const styles = StyleSheet.create({
     gap: 18,
     overflow: "hidden",
   },
+  rightPanelCompact: {
+    minWidth: "100%",
+    minHeight: 0,
+    gap: 14,
+  },
   brand: {
     fontFamily: "Oswald_500Medium",
     fontSize: 76,
     letterSpacing: 3.6,
+  },
+  brandCompact: {
+    fontSize: 42,
+    letterSpacing: 2,
   },
   title: {
     maxWidth: 720,
@@ -367,6 +382,10 @@ const styles = StyleSheet.create({
     fontSize: 46,
     lineHeight: 50,
     letterSpacing: 1.1,
+  },
+  titleCompact: {
+    fontSize: 30,
+    lineHeight: 34,
   },
   copy: {
     maxWidth: 650,
@@ -445,12 +464,19 @@ const styles = StyleSheet.create({
     lineHeight: 42,
     letterSpacing: 0.9,
   },
+  visualTitleCompact: {
+    fontSize: 26,
+    lineHeight: 30,
+  },
   visualFrame: {
     flex: 1,
     minHeight: 560,
     borderWidth: 1,
     borderRadius: 28,
     overflow: "hidden",
+  },
+  visualFrameCompact: {
+    minHeight: 280,
   },
   visualInner: {
     flex: 1,
@@ -463,6 +489,13 @@ const styles = StyleSheet.create({
     width: 1180,
     height: 1080,
     transform: [{ scale: 1.05 }],
+  },
+  imageFillCompact: {
+    right: -160,
+    bottom: -20,
+    width: 620,
+    height: 480,
+    transform: [{ scale: 1 }],
   },
   visualVeil: {
     position: "absolute",

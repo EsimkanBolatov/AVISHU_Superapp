@@ -26,6 +26,21 @@ const CATEGORY_LABELS: Record<string, Record<AppLanguage, string>> = {
     kk: "Жұмсақ қабат",
     en: "Softwear",
   },
+  knitwear: {
+    ru: "Трикотаж",
+    kk: "Трикотаж",
+    en: "Knitwear",
+  },
+  bottoms: {
+    ru: "Брюки",
+    kk: "Шалбар",
+    en: "Bottoms",
+  },
+  essentials: {
+    ru: "Essentials",
+    kk: "Essentials",
+    en: "Essentials",
+  },
 };
 
 const CATEGORY_DESCRIPTIONS: Record<string, Record<AppLanguage, string>> = {
@@ -43,6 +58,21 @@ const CATEGORY_DESCRIPTIONS: Record<string, Record<AppLanguage, string>> = {
     ru: "Мягкие слои для многослойного гардероба и премиальной повседневности.",
     kk: "Көпқабатты гардероб пен премиум күнделікті стильге арналған жұмсақ қабаттар.",
     en: "Softer layers for premium everyday dressing and quieter wardrobe depth.",
+  },
+  knitwear: {
+    ru: "Трикотажный слой для тихой роскоши, зимних капсул и аккуратного layering.",
+    kk: "Тыныш luxury, қысқы капсула және ұқыпты layering үшін трикотаж қабаты.",
+    en: "A knit layer for quiet luxury, winter capsules and cleaner layering.",
+  },
+  bottoms: {
+    ru: "Брюки и trousers с более точной архитектурой объема и посадки.",
+    kk: "Көлемі мен қонымы дәлірек шалбар мен trousers бағыты.",
+    en: "Pants and trousers with tighter control over volume and stance.",
+  },
+  essentials: {
+    ru: "Повседневная база премиум-магазина: тихая, чистая и пригодная для сложного layering.",
+    kk: "Premium дүкеннің күнделікті базасы: тыныш, таза және layering үшін ыңғайлы.",
+    en: "The premium store base layer: quiet, clean and built for sophisticated layering.",
   },
 };
 
@@ -96,6 +126,21 @@ const STYLE_LABELS: Record<string, Record<AppLanguage, string>> = {
     ru: "Многослойность",
     kk: "Қабаттау",
     en: "Layering",
+  },
+  knitwear: {
+    ru: "Трикотаж",
+    kk: "Трикотаж",
+    en: "Knitwear",
+  },
+  bottoms: {
+    ru: "Брюки",
+    kk: "Шалбар",
+    en: "Bottoms",
+  },
+  essentials: {
+    ru: "Essentials",
+    kk: "Essentials",
+    en: "Essentials",
   },
 };
 
