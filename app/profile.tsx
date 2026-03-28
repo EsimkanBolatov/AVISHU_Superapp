@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { MonoButton } from "../src/components/MonoButton";
 import { OrderTracker } from "../src/components/OrderTracker";
@@ -7,24 +7,16 @@ import { Panel } from "../src/components/Panel";
 import { ScreenShell } from "../src/components/ScreenShell";
 import { SectionHeading } from "../src/components/SectionHeading";
 import { StatusPill } from "../src/components/StatusPill";
+import { ThemeSwitch } from "../src/components/ThemeSwitch";
 import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
-import { AppLanguage, Role, ThemePreference } from "../src/types";
-
-const THEME_OPTIONS: ThemePreference[] = ["system", "light", "dark"];
-const LANGUAGE_OPTIONS: AppLanguage[] = ["ru", "kk", "en"];
-const ROLE_OPTIONS: Role[] = ["client", "franchisee", "production"];
 
 export default function ProfileScreen() {
   const theme = useResolvedTheme();
   const user = useAppStore((state) => state.user);
-  const themePreference = useAppStore((state) => state.themePreference);
-  const language = useAppStore((state) => state.language);
   const activeOrder = useAppStore((state) => state.activeOrder);
-  const setThemePreference = useAppStore((state) => state.setThemePreference);
-  const setLanguage = useAppStore((state) => state.setLanguage);
-  const login = useAppStore((state) => state.login);
+  const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const logout = useAppStore((state) => state.logout);
 
   if (!user) {
@@ -32,25 +24,18 @@ export default function ProfileScreen() {
     return null;
   }
 
-  const handleRoleSwitch = async (role: Role) => {
-    await login(role);
-    router.replace(
-      role === "client" ? "/client" : role === "franchisee" ? "/franchisee" : "/production",
-    );
-  };
-
   return (
-    <ScreenShell title="PROFILE" subtitle="SETTINGS / LOYALTY / TRACKING">
+    <ScreenShell title="PROFILE" subtitle="ACCOUNT / PREFERENCES / HISTORY">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.identity}>
           <View style={styles.identityGrid}>
             <View style={styles.identityCopy}>
-              <StatusPill label="CLIENT PROFILE / LIVE PREFERENCES" tone="solid" />
+              <StatusPill label={`${user.role.toUpperCase()} ACCOUNT / LIVE SESSION`} tone="solid" />
               <Text style={[styles.name, { color: theme.colors.textPrimary }]}>
                 {user.name.toUpperCase()}
               </Text>
               <Text style={[styles.role, { color: theme.colors.textSecondary }]}>
-                ROLE / {user.role.toUpperCase()}
+                {user.email} / {user.phone ?? "NO PHONE"}
               </Text>
 
               <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary }]}>
@@ -72,7 +57,11 @@ export default function ProfileScreen() {
 
             <View style={[styles.identityVisual, { borderColor: theme.colors.borderSoft }]}>
               <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
-              <Image source={referenceTechJacket} style={styles.visualImage} resizeMode="cover" />
+              <Image
+                source={user.avatarUrl ? { uri: user.avatarUrl } : referenceTechJacket}
+                style={styles.visualImage}
+                resizeMode="cover"
+              />
             </View>
           </View>
         </Panel>
@@ -81,57 +70,79 @@ export default function ProfileScreen() {
           <Panel style={styles.settingsPanel}>
             <SectionHeading
               title="THEME"
-              subtitle="System, light or dark mode with manual switching."
+              subtitle="Manual light and dark switching remains available globally."
               compact
             />
-            <View style={styles.optionRow}>
-              {THEME_OPTIONS.map((option) => (
-                <Chip
-                  key={option}
-                  label={option.toUpperCase()}
-                  active={themePreference === option}
-                  onPress={() => setThemePreference(option)}
-                />
-              ))}
-            </View>
+            <ThemeSwitch />
           </Panel>
 
           <Panel style={styles.settingsPanel}>
             <SectionHeading
-              title="LANGUAGE"
-              subtitle="RU / KK / EN preference, ready for future localization."
+              title="ACCOUNT STATE"
+              subtitle="Real auth session, stored account email and role-specific workspace access."
               compact
             />
-            <View style={styles.optionRow}>
-              {LANGUAGE_OPTIONS.map((option) => (
-                <Chip
-                  key={option}
-                  label={option.toUpperCase()}
-                  active={language === option}
-                  onPress={() => setLanguage(option)}
-                />
-              ))}
+            <View style={styles.metaBlock}>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>ROLE</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
+                {user.role.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.metaBlock}>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>TRY-ON SESSIONS</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
+                {tryOnSessions.length}
+              </Text>
             </View>
           </Panel>
         </View>
 
-        <Panel>
-          <SectionHeading
-            title="DEMO ROLE SWITCH"
-            subtitle="Fast validation of all three role scenarios from one local build."
-            compact
-          />
-          <View style={styles.optionRow}>
-            {ROLE_OPTIONS.map((option) => (
-              <Chip
-                key={option}
-                label={option.toUpperCase()}
-                active={user.role === option}
-                onPress={() => handleRoleSwitch(option)}
-              />
-            ))}
-          </View>
-        </Panel>
+        {user.role === "client" ? (
+          <Panel>
+            <SectionHeading
+              title="AI TRY-ON HISTORY"
+              subtitle="Saved previews and generated results tied to the client profile."
+              compact
+            />
+            <View style={styles.tryOnGrid}>
+              {tryOnSessions.length ? (
+                tryOnSessions.map((session) => (
+                  <View
+                    key={session.id}
+                    style={[
+                      styles.tryOnCard,
+                      {
+                        borderColor: theme.colors.borderSoft,
+                        backgroundColor: theme.colors.surfaceSecondary,
+                      },
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: session.resultImageUrl ?? session.sourceImageUrl }}
+                      style={styles.tryOnImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.tryOnCopy}>
+                      <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
+                        {session.status.toUpperCase()}
+                      </Text>
+                      <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
+                        {new Date(session.createdAt).toLocaleDateString()}
+                      </Text>
+                      <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>
+                        {session.notes}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>
+                  No try-on history yet. Generate your first fit preview from a product page.
+                </Text>
+              )}
+            </View>
+          </Panel>
+        ) : null}
 
         {activeOrder ? (
           <Panel>
@@ -147,49 +158,13 @@ export default function ProfileScreen() {
         <MonoButton
           label="SIGN OUT"
           variant="secondary"
-          onPress={() => {
-            logout();
+          onPress={async () => {
+            await logout();
             router.replace("/login");
           }}
         />
       </ScrollView>
     </ScreenShell>
-  );
-}
-
-function Chip({
-  active,
-  label,
-  onPress,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  const theme = useResolvedTheme();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.chip,
-        {
-          borderColor: theme.colors.borderSoft,
-          backgroundColor: active ? theme.colors.accent : theme.colors.surfaceSecondary,
-        },
-      ]}
-    >
-      <Text
-        style={[
-          styles.chipText,
-          {
-            color: active ? theme.colors.accentContrast : theme.colors.textSecondary,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -253,11 +228,8 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   visualImage: {
-    position: "absolute",
-    right: -30,
-    bottom: -20,
-    width: 330,
-    height: 400,
+    width: "100%",
+    height: "100%",
   },
   grid: {
     flexDirection: "row",
@@ -269,20 +241,38 @@ const styles = StyleSheet.create({
     minWidth: 280,
     gap: 12,
   },
-  optionRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
+  metaBlock: {
+    gap: 4,
   },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  chipText: {
+  metaLabel: {
     fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 1.4,
+  },
+  metaValue: {
+    fontFamily: "Oswald_500Medium",
+    fontSize: 24,
+    letterSpacing: 0.8,
+  },
+  tryOnGrid: {
+    gap: 12,
+  },
+  tryOnCard: {
+    borderWidth: 1,
+    borderRadius: 22,
+    overflow: "hidden",
+  },
+  tryOnImage: {
+    width: "100%",
+    height: 220,
+  },
+  tryOnCopy: {
+    padding: 16,
+    gap: 8,
+  },
+  tryOnText: {
+    fontFamily: "SpaceGrotesk_400Regular",
+    fontSize: 14,
+    lineHeight: 22,
   },
 });

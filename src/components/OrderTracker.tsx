@@ -4,7 +4,13 @@ import { useTranslation } from "react-i18next";
 import { useResolvedTheme } from "../lib/theme";
 import { Order, OrderStatus } from "../types";
 
-const STEPS: OrderStatus[] = ["pending_franchisee", "in_production", "ready"];
+const STEPS: OrderStatus[] = [
+  "pending_franchisee",
+  "in_production",
+  "quality_check",
+  "ready",
+  "delivered",
+];
 
 export function OrderTracker({ order }: { order: Order }) {
   const theme = useResolvedTheme();
@@ -44,7 +50,15 @@ export function OrderTracker({ order }: { order: Order }) {
                 {t(`status.${step}`)}
               </Text>
               <Text style={[styles.stepMeta, { color: theme.colors.textMuted }]}>
-                {index === 0 ? "FRANCHISEE DESK" : index === 1 ? "ATELIER QUEUE" : "CLIENT READY"}
+                {index === 0
+                  ? "FRANCHISEE DESK"
+                  : index === 1
+                    ? "ATELIER QUEUE"
+                    : index === 2
+                      ? "QUALITY CONTROL"
+                      : index === 3
+                        ? "CLIENT READY"
+                        : "DELIVERED"}
               </Text>
             </View>
           </View>

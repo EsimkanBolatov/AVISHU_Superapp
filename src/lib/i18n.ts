@@ -14,7 +14,9 @@ void i18n.use(initReactI18next).init({
         status: {
           pending_franchisee: "Новый заказ",
           in_production: "В производстве",
+          quality_check: "Контроль качества",
           ready: "Готово",
+          delivered: "Доставлено",
         },
       },
     },
@@ -23,7 +25,9 @@ void i18n.use(initReactI18next).init({
         status: {
           pending_franchisee: "Жаңа тапсырыс",
           in_production: "Өндірісте",
+          quality_check: "Сапа бақылауы",
           ready: "Дайын",
+          delivered: "Жеткізілді",
         },
       },
     },
@@ -32,7 +36,9 @@ void i18n.use(initReactI18next).init({
         status: {
           pending_franchisee: "New order",
           in_production: "In production",
+          quality_check: "Quality check",
           ready: "Ready",
+          delivered: "Delivered",
         },
       },
     },

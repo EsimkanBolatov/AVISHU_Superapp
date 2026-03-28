@@ -21,44 +21,207 @@ enum ProductAvailability {
 enum OrderStatus {
   pending_franchisee
   in_production
+  quality_check
   ready
+  delivered
+}
+
+enum PaymentStatus {
+  unpaid
+  paid
+  refunded
+}
+
+enum DeliveryMethod {
+  pickup
+  courier
+}
+
+enum PaymentMethod {
+  card
+  kaspi
+  transfer
+}
+
+enum TryOnStatus {
+  uploaded
+  processing
+  ready
+  failed
+}
+
+enum MediaKind {
+  cover
+  gallery
+  detail
 }
 
 model User {
-  id              String   @id
+  id              String            @id
+  email           String            @unique
+  passwordHash    String
   name            String
-  role            Role     @unique
-  loyaltyProgress Int      @default(0)
-  orders          Order[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  role            Role
+  avatarUrl       String?
+  phone           String?
+  loyaltyProgress Int               @default(0)
+  sessions        Session[]
+  orders          Order[]           @relation("CustomerOrders")
+  tryOnSessions   TryOnSession[]
+  orderComments   OrderComment[]    @relation("CommentAuthor")
+  orderAttachments OrderAttachment[] @relation("AttachmentAuthor")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Category {
+  id          String    @id
+  slug        String    @unique
+  name        String
+  description String
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Product {
-  id           String              @id
-  sku          String              @unique
-  name         String
-  price        String
-  availability ProductAvailability
-  style        String[]
-  description  String
-  orders       Order[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id              String              @id
+  slug            String              @unique
+  sku             String              @unique
+  name            String
+  subtitle        String
+  priceAmount     Int
+  currency        String              @default("KZT")
+  availability    ProductAvailability
+  style           String[]
+  description     String
+  composition     String
+  fittingNotes    String
+  deliveryEstimate String
+  featured        Boolean             @default(false)
+  categoryId      String
+  category        Category            @relation(fields: [categoryId], references: [id])
+  media           ProductMedia[]
+  variants        ProductVariant[]
+  orders          Order[]
+  tryOnSessions   TryOnSession[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([categoryId])
+}
+
+model ProductMedia {
+  id        String    @id
+  productId String
+  url       String
+  alt       String
+  kind      MediaKind
+  sortOrder Int       @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+}
+
+model ProductVariant {
+  id        String  @id
+  productId String
+  sizeLabel String
+  stock     Int
+  reserved  Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orders    Order[]
+
+  @@index([productId])
+}
+
+model TryOnSession {
+  id             String      @id
+  userId         String
+  productId      String
+  sourceImageUrl String
+  resultImageUrl String?
+  status         TryOnStatus
+  notes          String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orders         Order[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([productId])
 }
 
 model Order {
-  id            String      @id
-  number        String      @unique
-  productId     String
-  customerId    String
-  status        OrderStatus
-  notes         String
-  scheduledDate DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             String         @id
+  number         String         @unique
+  productId      String
+  variantId      String?
+  customerId     String
+  tryOnId        String?
+  status         OrderStatus
+  paymentStatus  PaymentStatus
+  deliveryMethod DeliveryMethod
+  paymentMethod  PaymentMethod
+  notes          String
+  shippingAddress String
+  contactPhone   String
+  scheduledDate  DateTime?
+  totalAmount    Int
+  currency       String         @default("KZT")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  product  Product @relation(fields: [productId], references: [id])
-  customer User    @relation(fields: [customerId], references: [id])
+  product     Product          @relation(fields: [productId], references: [id])
+  variant     ProductVariant?  @relation(fields: [variantId], references: [id])
+  customer    User             @relation("CustomerOrders", fields: [customerId], references: [id])
+  tryOn       TryOnSession?    @relation(fields: [tryOnId], references: [id])
+  comments    OrderComment[]
+  attachments OrderAttachment[]
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
 }
 
+model OrderComment {
+  id        String   @id
+  orderId   String
+  authorId  String
+  message   String
+  createdAt DateTime @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User  @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+model OrderAttachment {
+  id        String   @id
+  orderId   String
+  authorId  String
+  label     String
+  url       String
+  createdAt DateTime @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User  @relation("AttachmentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}

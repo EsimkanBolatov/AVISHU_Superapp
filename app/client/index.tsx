@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { ChoiceChip } from "../../src/components/ChoiceChip";
 import { MonoButton } from "../../src/components/MonoButton";
 import { OrderTracker } from "../../src/components/OrderTracker";
 import { Panel } from "../../src/components/Panel";
@@ -13,122 +14,142 @@ import { useResolvedTheme } from "../../src/lib/theme";
 import { useRequireRole } from "../../src/lib/useRequireRole";
 import { useAppStore } from "../../src/store/useAppStore";
 
-const STORY_MODULES = [
-  "Ready-stock and preorder flows live in one premium retail canvas.",
-  "The garment leads the screen, while operational data stays precise and quiet.",
-  "This interface now follows a colder technical-fashion rhythm instead of a demo-marketplace feel.",
-];
-
-const SPEC_ROWS = [
-  ["FIT RANGE", "XS / S / M / L / XL"],
-  ["OUTER SHELL", "WATERPROOF / WIND-SAFE / MATTE FINISH"],
-  ["FULFILLMENT", "READY STOCK OR SCHEDULED PREORDER"],
-];
-
 export default function ClientScreen() {
   const redirect = useRequireRole("client");
   const theme = useResolvedTheme();
+  const categories = useAppStore((state) => state.categories);
   const products = useAppStore((state) => state.products);
   const activeOrder = useAppStore((state) => state.activeOrder);
+  const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const user = useAppStore((state) => state.user);
 
   if (redirect) {
     return redirect;
   }
 
+  const featuredProduct = products.find((product) => product.featured) ?? products[0];
+
   return (
-    <ScreenShell title="VITRINA" subtitle="COLLECTION / CLIENT FLOW" profileRoute="/profile">
+    <ScreenShell title="VITRINA" subtitle="CATALOG / TRY-ON / CHECKOUT" profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <Panel style={styles.heroPanel}>
-          <View style={styles.heroCopy}>
-            <StatusPill label="DROP 03 / MONOCHROME" tone="solid" />
-            <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>
-              TECHNICAL OUTERWEAR WITH QUIET LUXURY RETAIL COMPOSITION
-            </Text>
-            <Text style={[styles.heroText, { color: theme.colors.textSecondary }]}>
-              The client vitrina now leads with the garment first: large image fields, technical
-              spec rhythm and a cleaner path from product discovery to order placement.
-            </Text>
+        {featuredProduct ? (
+          <Panel style={styles.heroPanel}>
+            <View style={styles.heroCopy}>
+              <StatusPill label="FEATURED DROP / PRODUCT SYSTEM" tone="solid" />
+              <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>
+                {featuredProduct.name.toUpperCase()}
+              </Text>
+              <Text style={[styles.heroText, { color: theme.colors.textSecondary }]}>
+                {featuredProduct.subtitle}
+              </Text>
 
-            <View style={styles.heroActions}>
-              <MonoButton label="ENTER PRODUCT" onPress={() => router.push("/client/product/p-001")} />
-              <MonoButton
-                label="OPEN PROFILE"
-                variant="secondary"
-                onPress={() => router.push("/profile")}
+              <View style={styles.heroActions}>
+                <MonoButton
+                  label="OPEN PRODUCT"
+                  onPress={() => router.push(`/client/product/${featuredProduct.id}`)}
+                />
+                <MonoButton
+                  label="OPEN PROFILE"
+                  variant="secondary"
+                  onPress={() => router.push("/profile")}
+                />
+              </View>
+
+              <View style={styles.specList}>
+                {[
+                  ["CATEGORY", featuredProduct.categoryName],
+                  ["FIT NOTES", featuredProduct.fittingNotes],
+                  ["DELIVERY", featuredProduct.deliveryEstimate],
+                ].map(([label, value]) => (
+                  <View key={label} style={[styles.specRow, { borderColor: theme.colors.borderSoft }]}>
+                    <Text style={[styles.specLabel, { color: theme.colors.textMuted }]}>{label}</Text>
+                    <Text style={[styles.specValue, { color: theme.colors.textSecondary }]}>{value}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.heroVisualWrap}>
+              <View style={[styles.heroGlow, { backgroundColor: theme.colors.glow }]} />
+              <View style={[styles.heroVisual, { borderColor: theme.colors.borderSoft }]}>
+                <Image
+                  source={featuredProduct.media[0]?.url ? { uri: featuredProduct.media[0].url } : referenceTechJacket}
+                  style={styles.heroImage}
+                  resizeMode="cover"
+                />
+
+                <View style={styles.heroOverlayTop}>
+                  <Text style={[styles.overlayMeta, { color: theme.colors.textMuted }]}>
+                    {featuredProduct.categoryName.toUpperCase()} / {featuredProduct.sku}
+                  </Text>
+                  <Text style={[styles.overlayCode, { color: theme.colors.textPrimary }]}>
+                    {featuredProduct.formattedPrice}
+                  </Text>
+                </View>
+
+                <View style={styles.heroOverlayBottom}>
+                  <View style={styles.heroStatGrid}>
+                    <View style={[styles.heroStat, { borderColor: theme.colors.borderSoft }]}>
+                      <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+                        {user?.loyaltyProgress ?? 0}%
+                      </Text>
+                      <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
+                        LOYALTY STATUS
+                      </Text>
+                    </View>
+
+                    <View style={[styles.heroStat, { borderColor: theme.colors.borderSoft }]}>
+                      <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+                        {tryOnSessions.length}
+                      </Text>
+                      <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
+                        TRY-ON SESSIONS
+                      </Text>
+                    </View>
+
+                    <View style={[styles.heroStat, { borderColor: theme.colors.borderSoft }]}>
+                      <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+                        {products.length}
+                      </Text>
+                      <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
+                        PRODUCTS
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </Panel>
+        ) : null}
+
+        <Panel>
+          <SectionHeading
+            title="CATEGORIES"
+            subtitle="A real catalog layer with grouped product navigation and clearer merchandising."
+            compact
+          />
+          <View style={styles.categoryRow}>
+            {categories.map((category) => (
+              <ChoiceChip
+                key={category.id}
+                label={category.name.toUpperCase()}
+                active={featuredProduct?.categoryId === category.id}
+                onPress={() => {
+                  const target = products.find((product) => product.categoryId === category.id);
+                  if (target) {
+                    router.push(`/client/product/${target.id}`);
+                  }
+                }}
               />
-            </View>
-
-            <View style={styles.specList}>
-              {SPEC_ROWS.map(([label, value]) => (
-                <View key={label} style={[styles.specRow, { borderColor: theme.colors.borderSoft }]}>
-                  <Text style={[styles.specLabel, { color: theme.colors.textMuted }]}>{label}</Text>
-                  <Text style={[styles.specValue, { color: theme.colors.textSecondary }]}>{value}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.heroVisualWrap}>
-            <View style={[styles.heroGlow, { backgroundColor: theme.colors.glow }]} />
-            <View style={[styles.heroVisual, { borderColor: theme.colors.borderSoft }]}>
-              <Image source={referenceTechJacket} style={styles.heroImage} resizeMode="cover" />
-
-              <View style={styles.heroOverlayTop}>
-                <Text style={[styles.overlayMeta, { color: theme.colors.textMuted }]}>
-                  STORM SHELL / FIT PREVIEW
-                </Text>
-                <Text style={[styles.overlayCode, { color: theme.colors.textPrimary }]}>
-                  SKU / P-001
-                </Text>
-              </View>
-
-              <View style={styles.heroOverlayBottom}>
-                <View style={styles.heroStatGrid}>
-                  <View style={[styles.heroStat, { borderColor: theme.colors.borderSoft }]}>
-                    <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
-                      {user?.loyaltyProgress ?? 0}%
-                    </Text>
-                    <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
-                      LOYALTY STATUS
-                    </Text>
-                  </View>
-
-                  <View style={[styles.heroStat, { borderColor: theme.colors.borderSoft }]}>
-                    <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>LIVE</Text>
-                    <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
-                      SOCKET SYNC
-                    </Text>
-                  </View>
-
-                  <View style={[styles.heroStat, { borderColor: theme.colors.borderSoft }]}>
-                    <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
-                      {products.length}
-                    </Text>
-                    <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
-                      PRODUCTS
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
+            ))}
           </View>
         </Panel>
-
-        <View style={styles.noteGrid}>
-          {STORY_MODULES.map((note, index) => (
-            <Panel key={note} style={styles.noteCard}>
-              <Text style={[styles.noteIndex, { color: theme.colors.textMuted }]}>0{index + 1}</Text>
-              <Text style={[styles.noteText, { color: theme.colors.textSecondary }]}>{note}</Text>
-            </Panel>
-          ))}
-        </View>
 
         {activeOrder ? (
           <Panel>
             <SectionHeading
               title="ACTIVE ORDER"
-              subtitle="The client sees status changes immediately after franchisee and atelier actions."
+              subtitle="The client sees live status changes after franchisee and atelier actions."
               compact
             />
             <OrderTracker order={activeOrder} />
@@ -137,7 +158,7 @@ export default function ClientScreen() {
 
         <SectionHeading
           title="CATALOG"
-          subtitle="A premium grid for immediate purchase and preorder inside the same visual language."
+          subtitle="Real product cards with media gallery, pricing, variants and category context."
         />
 
         <View style={styles.catalogGrid}>
@@ -231,15 +252,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   heroImage: {
-    position: "absolute",
-    right: -46,
-    bottom: 0,
-    width: 510,
-    height: 720,
+    width: "100%",
+    height: "100%",
   },
   heroOverlayTop: {
-    paddingHorizontal: 22,
-    paddingTop: 20,
+    position: "absolute",
+    top: 20,
+    left: 22,
+    right: 22,
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 12,
@@ -255,7 +275,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
   },
   heroOverlayBottom: {
-    padding: 16,
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 16,
   },
   heroStatGrid: {
     gap: 10,
@@ -278,25 +301,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.6,
   },
-  noteGrid: {
+  categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
-  },
-  noteCard: {
-    flexBasis: 240,
-    flexGrow: 1,
-    minHeight: 128,
-    gap: 12,
-  },
-  noteIndex: {
-    fontFamily: "Oswald_500Medium",
-    fontSize: 22,
-  },
-  noteText: {
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 14,
-    lineHeight: 22,
+    gap: 10,
   },
   catalogGrid: {
     flexDirection: "row",

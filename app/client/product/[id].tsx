@@ -1,8 +1,10 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { ChoiceChip } from "../../../src/components/ChoiceChip";
 import { MonoButton } from "../../../src/components/MonoButton";
+import { MonoInput } from "../../../src/components/MonoInput";
 import { Panel } from "../../../src/components/Panel";
 import { ScreenShell } from "../../../src/components/ScreenShell";
 import { SectionHeading } from "../../../src/components/SectionHeading";
@@ -13,11 +15,6 @@ import { useRequireRole } from "../../../src/lib/useRequireRole";
 import { useAppStore } from "../../../src/store/useAppStore";
 
 const DELIVERY_OPTIONS = ["2026-04-02", "2026-04-05", "2026-04-09"];
-const TECH_SPECS = [
-  ["FABRIC", "WATER-SAFE HIGH DENSITY SHELL"],
-  ["SILHOUETTE", "STRUCTURED / RELAXED ARM SWING"],
-  ["SYSTEM", "READY STOCK + PREORDER LOGIC"],
-];
 
 export default function ProductDetailScreen() {
   const redirect = useRequireRole("client");
@@ -25,14 +22,21 @@ export default function ProductDetailScreen() {
   const theme = useResolvedTheme();
   const params = useLocalSearchParams<{ id: string }>();
   const products = useAppStore((state) => state.products);
-  const placeOrder = useAppStore((state) => state.placeOrder);
+  const createTryOn = useAppStore((state) => state.createTryOn);
+  const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const [selectedDate, setSelectedDate] = useState(DELIVERY_OPTIONS[0]);
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [submittingTryOn, setSubmittingTryOn] = useState(false);
+  const [selectedTryOnId, setSelectedTryOnId] = useState<string | null>(null);
 
   const product = useMemo(
     () => products.find((item) => item.id === params.id) ?? products[0],
     [params.id, products],
   );
+
+  const productTryOns = tryOnSessions.filter((session) => session.productId === product?.id);
 
   if (redirect) {
     return redirect;
@@ -42,18 +46,30 @@ export default function ProductDetailScreen() {
     return null;
   }
 
-  const handleSubmit = async () => {
-    setSubmitting(true);
+  const activeMedia = product.media[activeMediaIndex]?.url
+    ? { uri: product.media[activeMediaIndex].url }
+    : referenceTechJacket;
+
+  const activeVariantId = selectedVariantId ?? product.variants[0]?.id;
+
+  const handleCreateTryOn = async () => {
+    if (!photoUrl.trim()) {
+      return;
+    }
+
+    setSubmittingTryOn(true);
 
     try {
-      const order = await placeOrder(
-        product.id,
-        product.availability === "preorder" ? selectedDate : undefined,
-      );
+      const tryOn = await createTryOn({
+        productId: product.id,
+        sourceImageUrl: photoUrl.trim(),
+        notes: `Generated for ${product.name}.`,
+      });
 
-      router.push(`/client/checkout/${order.id}`);
+      setSelectedTryOnId(tryOn.id);
+      setPhotoUrl("");
     } finally {
-      setSubmitting(false);
+      setSubmittingTryOn(false);
     }
   };
 
@@ -63,47 +79,47 @@ export default function ProductDetailScreen() {
         <View style={styles.grid}>
           <Panel style={styles.visualPanel}>
             <View style={[styles.visualBlock, { borderColor: theme.colors.borderSoft }]}>
-              <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
-              <Image source={referenceTechJacket} style={styles.visualImage} resizeMode="cover" />
+              <Image source={activeMedia} style={styles.visualImage} resizeMode="cover" />
 
               <View style={styles.visualTop}>
                 <Text style={[styles.visualCode, { color: theme.colors.textMuted }]}>
                   SKU / {product.sku}
                 </Text>
-                <Text style={[styles.visualSize, { color: theme.colors.textPrimary }]}>XS - XL</Text>
+                <Text style={[styles.visualSize, { color: theme.colors.textPrimary }]}>
+                  {product.formattedPrice}
+                </Text>
               </View>
 
               <View style={styles.visualBottom}>
                 <Text style={[styles.visualTitle, { color: theme.colors.textPrimary }]}>
-                  IMAGE-LED PRODUCT STORY WITH CLEAN SPEC PRESENTATION
+                  {product.subtitle.toUpperCase()}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.visualMeta}>
-              <StatusPill
-                label={product.availability === "in_stock" ? "READY STOCK" : "PREORDER"}
-                tone={product.availability === "in_stock" ? "solid" : "ghost"}
-              />
-              <Text style={[styles.visualCode, { color: theme.colors.textMuted }]}>
-                CLIENT PREVIEW / LIVE
-              </Text>
+            <View style={styles.thumbnailRow}>
+              {product.media.map((media, index) => (
+                <ChoiceChip
+                  key={media.id}
+                  label={`IMG ${index + 1}`}
+                  active={activeMediaIndex === index}
+                  onPress={() => setActiveMediaIndex(index)}
+                />
+              ))}
             </View>
           </Panel>
 
           <Panel style={styles.detailsPanel}>
             <SectionHeading title={product.name.toUpperCase()} subtitle={product.description} />
-            <Text style={[styles.price, { color: theme.colors.textPrimary }]}>{product.price}</Text>
+            <Text style={[styles.price, { color: theme.colors.textPrimary }]}>{product.formattedPrice}</Text>
 
             <View style={styles.metaRows}>
-              <View style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
-                <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>STYLE</Text>
-                <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>
-                  {product.style.join(" / ").toUpperCase()}
-                </Text>
-              </View>
-
-              {TECH_SPECS.map(([label, value]) => (
+              {[
+                ["CATEGORY", product.categoryName],
+                ["COMPOSITION", product.composition],
+                ["FITTING NOTES", product.fittingNotes],
+                ["DELIVERY", product.deliveryEstimate],
+              ].map(([label, value]) => (
                 <View key={label} style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
                   <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{label}</Text>
                   <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>{value}</Text>
@@ -111,62 +127,88 @@ export default function ProductDetailScreen() {
               ))}
             </View>
 
+            <View style={styles.selectionBlock}>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>SIZE SELECTION</Text>
+              <View style={styles.chipRow}>
+                {product.variants.map((variant) => (
+                  <ChoiceChip
+                    key={variant.id}
+                    label={`${variant.sizeLabel} / ${variant.stock}`}
+                    active={activeVariantId === variant.id}
+                    onPress={() => setSelectedVariantId(variant.id)}
+                  />
+                ))}
+              </View>
+            </View>
+
             {product.availability === "preorder" ? (
-              <View style={styles.preorderPanel}>
+              <View style={styles.selectionBlock}>
                 <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
                   SELECT DELIVERY WINDOW
                 </Text>
-                <View style={styles.dateGrid}>
+                <View style={styles.chipRow}>
                   {DELIVERY_OPTIONS.map((option) => (
-                    <Pressable
+                    <ChoiceChip
                       key={option}
+                      label={option}
+                      active={selectedDate === option}
                       onPress={() => setSelectedDate(option)}
-                      style={[
-                        styles.dateChip,
-                        {
-                          borderColor: theme.colors.borderSoft,
-                          backgroundColor:
-                            selectedDate === option ? theme.colors.accent : theme.colors.surface,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.dateChipText,
-                          {
-                            color:
-                              selectedDate === option
-                                ? theme.colors.accentContrast
-                                : theme.colors.textSecondary,
-                          },
-                        ]}
-                      >
-                        {option}
-                      </Text>
-                    </Pressable>
+                    />
                   ))}
                 </View>
               </View>
             ) : null}
 
             <Panel style={styles.tryOnPanel}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>AI TRY-ON NEXT</Text>
-              <Text style={[styles.tryOnCopy, { color: theme.colors.textSecondary }]}>
-                The next product phase should let the client upload a full-body photo, generate a
-                styled preview and save the result to the order history.
-              </Text>
+              <SectionHeading
+                title="AI TRY-ON PIPELINE"
+                subtitle="Paste a source image URL to create a saved try-on preview tied to your profile."
+                compact
+              />
+              <MonoInput
+                label="SOURCE IMAGE URL"
+                value={photoUrl}
+                onChangeText={setPhotoUrl}
+                placeholder="https://..."
+                autoCapitalize="none"
+              />
+              <MonoButton
+                label={submittingTryOn ? "GENERATING..." : "CREATE TRY-ON"}
+                variant="secondary"
+                onPress={handleCreateTryOn}
+              />
+
+              <View style={styles.tryOnRow}>
+                {productTryOns.map((session) => (
+                  <ChoiceChip
+                    key={session.id}
+                    label={new Date(session.createdAt).toLocaleDateString()}
+                    active={selectedTryOnId === session.id}
+                    onPress={() => setSelectedTryOnId(session.id)}
+                  />
+                ))}
+              </View>
             </Panel>
+
+            <StatusPill
+              label={product.availability === "in_stock" ? "READY FOR CHECKOUT" : "PREORDER FLOW"}
+              tone={product.availability === "in_stock" ? "solid" : "ghost"}
+            />
 
             <View style={styles.actionRow}>
               <MonoButton
-                label={
-                  submitting
-                    ? "CREATING ORDER..."
-                    : product.availability === "in_stock"
-                      ? "BUY NOW"
-                      : "CREATE PREORDER"
+                label="CONTINUE TO CHECKOUT"
+                onPress={() =>
+                  router.push({
+                    pathname: `/client/checkout/${product.id}`,
+                    params: {
+                      variantId: activeVariantId,
+                      scheduledDate:
+                        product.availability === "preorder" ? selectedDate : undefined,
+                      tryOnId: selectedTryOnId ?? undefined,
+                    },
+                  })
                 }
-                onPress={handleSubmit}
               />
               <MonoButton label="BACK" variant="secondary" onPress={() => router.back()} />
             </View>
@@ -189,44 +231,33 @@ const styles = StyleSheet.create({
   visualPanel: {
     flex: 1,
     minWidth: 300,
-    minHeight: 720,
-    justifyContent: "space-between",
     gap: 18,
   },
   visualBlock: {
-    flex: 1,
     minHeight: 620,
     borderWidth: 1,
     borderRadius: 28,
     overflow: "hidden",
   },
-  visualGlow: {
-    position: "absolute",
-    top: -50,
-    right: -40,
-    width: 320,
-    height: 320,
-    borderRadius: 999,
-    opacity: 0.88,
-  },
   visualImage: {
-    position: "absolute",
-    right: -54,
-    bottom: 0,
-    width: 480,
-    height: 700,
+    width: "100%",
+    height: "100%",
   },
   visualTop: {
-    paddingHorizontal: 22,
-    paddingTop: 20,
+    position: "absolute",
+    top: 20,
+    left: 22,
+    right: 22,
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 12,
   },
   visualBottom: {
-    paddingHorizontal: 22,
-    paddingBottom: 22,
-    maxWidth: 340,
+    position: "absolute",
+    left: 22,
+    right: 22,
+    bottom: 22,
+    maxWidth: 360,
   },
   visualTitle: {
     fontFamily: "Oswald_500Medium",
@@ -234,11 +265,10 @@ const styles = StyleSheet.create({
     lineHeight: 38,
     letterSpacing: 0.7,
   },
-  visualMeta: {
+  thumbnailRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 10,
   },
   visualSize: {
     fontFamily: "Oswald_500Medium",
@@ -278,32 +308,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  preorderPanel: {
+  selectionBlock: {
     gap: 12,
   },
-  dateGrid: {
+  chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },
-  dateChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  dateChipText: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 11,
-    letterSpacing: 1.2,
-  },
   tryOnPanel: {
-    gap: 10,
+    gap: 12,
   },
-  tryOnCopy: {
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 14,
-    lineHeight: 23,
+  tryOnRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
   },
   actionRow: {
     flexDirection: "row",
