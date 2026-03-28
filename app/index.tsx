@@ -120,6 +120,10 @@ export default function IndexScreen() {
     return <Redirect href="/production" />;
   }
 
+  if (user?.role === "support") {
+    return <Redirect href="/support" />;
+  }
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>

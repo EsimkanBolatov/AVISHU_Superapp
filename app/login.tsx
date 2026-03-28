@@ -36,6 +36,11 @@ const ACCESS_PRESETS = [
     email: "production@avishu.kz",
     password: "Production123!",
   },
+  {
+    label: "SUPPORT",
+    email: "support@avishu.kz",
+    password: "Support123!",
+  },
 ];
 
 const COPY: Record<
@@ -174,7 +179,9 @@ export default function LoginScreen() {
           ? "/admin"
           : currentUser.role === "franchisee"
             ? "/franchisee"
-            : "/production",
+            : currentUser.role === "support"
+              ? "/support"
+              : "/production",
     );
   };
 
