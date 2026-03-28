@@ -2,8 +2,38 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { referenceTechJacket } from "../lib/brandArt";
 import { useResolvedTheme } from "../lib/theme";
-import { Product } from "../types";
+import { useAppStore } from "../store/useAppStore";
+import { AppLanguage, Product } from "../types";
 import { StatusPill } from "./StatusPill";
+
+const COPY: Record<
+  AppLanguage,
+  {
+    inStock: string;
+    preorder: string;
+    sizes: string;
+    discover: string;
+  }
+> = {
+  ru: {
+    inStock: "В НАЛИЧИИ",
+    preorder: "ПРЕДЗАКАЗ",
+    sizes: "РАЗМЕРЫ",
+    discover: "ОТКРЫТЬ ПРОДУКТ",
+  },
+  kk: {
+    inStock: "ДАЙЫН",
+    preorder: "АЛДЫН АЛА ТАПСЫРЫС",
+    sizes: "ӨЛШЕМДЕР",
+    discover: "ӨНІМДІ АШУ",
+  },
+  en: {
+    inStock: "READY STOCK",
+    preorder: "PREORDER",
+    sizes: "SIZES",
+    discover: "OPEN PRODUCT",
+  },
+};
 
 export function ProductCard({
   onPress,
@@ -13,6 +43,8 @@ export function ProductCard({
   product: Product;
 }) {
   const theme = useResolvedTheme();
+  const language = useAppStore((state) => state.language);
+  const copy = COPY[language];
   const coverImage = product.media[0]?.url
     ? { uri: product.media[0].url }
     : referenceTechJacket;
@@ -31,9 +63,22 @@ export function ProductCard({
       <View style={[styles.visualWrap, { borderColor: theme.colors.borderSoft }]}>
         <View style={[styles.glow, { backgroundColor: theme.colors.glow }]} />
         <Image source={coverImage} style={styles.image} resizeMode="cover" />
+        <View
+          style={[
+            styles.imageVeil,
+            {
+              backgroundColor: theme.colors.background,
+            },
+          ]}
+        />
         <View style={styles.visualTop}>
-          <StatusPill label={product.availability === "in_stock" ? "READY STOCK" : "PREORDER"} />
+          <StatusPill
+            label={product.availability === "in_stock" ? copy.inStock : copy.preorder}
+          />
           <Text style={[styles.sku, { color: theme.colors.textMuted }]}>{product.sku}</Text>
+        </View>
+        <View style={styles.visualBottom}>
+          <Text style={[styles.discover, { color: theme.colors.textPrimary }]}>{copy.discover}</Text>
         </View>
       </View>
 
@@ -47,13 +92,22 @@ export function ProductCard({
 
         <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{product.subtitle}</Text>
 
-        <View style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
-          <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
-            {product.categoryName.toUpperCase()}
-          </Text>
-          <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>
-            {product.variants.map((variant) => variant.sizeLabel).join(" / ")}
-          </Text>
+        <View style={styles.footer}>
+          <View style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
+            <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
+              {product.categoryName.toUpperCase()}
+            </Text>
+            <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>
+              {product.style.join(" / ").toUpperCase()}
+            </Text>
+          </View>
+
+          <View style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
+            <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.sizes}</Text>
+            <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>
+              {product.variants.map((variant) => variant.sizeLabel).join(" / ")}
+            </Text>
+          </View>
         </View>
       </View>
     </Pressable>
@@ -67,10 +121,10 @@ const styles = StyleSheet.create({
     flexBasis: 340,
     flexGrow: 1,
     overflow: "hidden",
-    minHeight: 500,
+    minHeight: 560,
   },
   visualWrap: {
-    height: 310,
+    height: 350,
     borderBottomWidth: 1,
     overflow: "hidden",
     justifyContent: "space-between",
@@ -88,6 +142,14 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  imageVeil: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 110,
+    opacity: 0.18,
+  },
   visualTop: {
     position: "absolute",
     top: 18,
@@ -98,14 +160,27 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: "center",
   },
+  visualBottom: {
+    position: "absolute",
+    left: 18,
+    right: 18,
+    bottom: 18,
+    alignItems: "flex-end",
+  },
   sku: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
     letterSpacing: 1.4,
   },
+  discover: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.8,
+  },
   content: {
-    padding: 18,
-    gap: 14,
+    flex: 1,
+    padding: 20,
+    gap: 16,
   },
   header: {
     gap: 8,
@@ -125,6 +200,10 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_400Regular",
     fontSize: 14,
     lineHeight: 23,
+  },
+  footer: {
+    marginTop: "auto",
+    gap: 12,
   },
   metaRow: {
     borderTopWidth: 1,

@@ -13,17 +13,110 @@ import { referenceTechJacket } from "../../../src/lib/brandArt";
 import { useResolvedTheme } from "../../../src/lib/theme";
 import { useRequireRole } from "../../../src/lib/useRequireRole";
 import { useAppStore } from "../../../src/store/useAppStore";
+import { AppLanguage } from "../../../src/types";
 
 const DELIVERY_OPTIONS = ["2026-04-02", "2026-04-05", "2026-04-09"];
+
+const COPY: Record<
+  AppLanguage,
+  {
+    shellTitle: string;
+    sku: string;
+    category: string;
+    composition: string;
+    fitNotes: string;
+    delivery: string;
+    sizeSelection: string;
+    selectDelivery: string;
+    tryOnTitle: string;
+    tryOnSubtitle: string;
+    sourceImage: string;
+    generate: string;
+    generating: string;
+    ready: string;
+    preorder: string;
+    addToCart: string;
+    continue: string;
+    back: string;
+    cart: string;
+  }
+> = {
+  ru: {
+    shellTitle: "ПРОДУКТ",
+    sku: "SKU",
+    category: "КАТЕГОРИЯ",
+    composition: "СОСТАВ",
+    fitNotes: "ПОСАДКА",
+    delivery: "ДОСТАВКА",
+    sizeSelection: "ВЫБОР РАЗМЕРА",
+    selectDelivery: "ВЫБЕРИ ОКНО ДОСТАВКИ",
+    tryOnTitle: "AI TRY-ON PIPELINE",
+    tryOnSubtitle: "Вставь ссылку на фото, чтобы создать сохраненный preview, привязанный к профилю.",
+    sourceImage: "ССЫЛКА НА ИСХОДНОЕ ФОТО",
+    generate: "СОЗДАТЬ TRY-ON",
+    generating: "ГЕНЕРАЦИЯ...",
+    ready: "ГОТОВО К CHECKOUT",
+    preorder: "РЕЖИМ ПРЕДЗАКАЗА",
+    addToCart: "ДОБАВИТЬ В КОРЗИНУ",
+    continue: "К ЧЕКАУТУ",
+    back: "НАЗАД",
+    cart: "ОТКРЫТЬ КОРЗИНУ",
+  },
+  kk: {
+    shellTitle: "ӨНІМ",
+    sku: "SKU",
+    category: "САНАТ",
+    composition: "ҚҰРАМЫ",
+    fitNotes: "ОТЫРЫМЫ",
+    delivery: "ЖЕТКІЗУ",
+    sizeSelection: "ӨЛШЕМДІ ТАҢДАУ",
+    selectDelivery: "ЖЕТКІЗУ ТЕРЕЗЕСІН ТАҢДА",
+    tryOnTitle: "AI TRY-ON PIPELINE",
+    tryOnSubtitle: "Профильге байланысатын preview жасау үшін фото сілтемесін енгіз.",
+    sourceImage: "БАСТАПҚЫ ФОТО СІЛТЕМЕСІ",
+    generate: "TRY-ON ЖАСАУ",
+    generating: "ЖАСАЛУДА...",
+    ready: "CHECKOUT-КА ДАЙЫН",
+    preorder: "АЛДЫН АЛА ТАПСЫРЫС",
+    addToCart: "СЕБЕТКЕ ҚОСУ",
+    continue: "CHECKOUT-КА ӨТУ",
+    back: "АРТҚА",
+    cart: "СЕБЕТТІ АШУ",
+  },
+  en: {
+    shellTitle: "PRODUCT",
+    sku: "SKU",
+    category: "CATEGORY",
+    composition: "COMPOSITION",
+    fitNotes: "FIT NOTES",
+    delivery: "DELIVERY",
+    sizeSelection: "SIZE SELECTION",
+    selectDelivery: "SELECT DELIVERY WINDOW",
+    tryOnTitle: "AI TRY-ON PIPELINE",
+    tryOnSubtitle: "Paste a source image URL to create a saved preview tied to your profile.",
+    sourceImage: "SOURCE IMAGE URL",
+    generate: "CREATE TRY-ON",
+    generating: "GENERATING...",
+    ready: "READY FOR CHECKOUT",
+    preorder: "PREORDER FLOW",
+    addToCart: "ADD TO CART",
+    continue: "CONTINUE TO CHECKOUT",
+    back: "BACK",
+    cart: "OPEN CART",
+  },
+};
 
 export default function ProductDetailScreen() {
   const redirect = useRequireRole("client");
   const router = useRouter();
   const theme = useResolvedTheme();
+  const language = useAppStore((state) => state.language);
   const params = useLocalSearchParams<{ id: string }>();
   const products = useAppStore((state) => state.products);
   const createTryOn = useAppStore((state) => state.createTryOn);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
+  const addToCart = useAppStore((state) => state.addToCart);
+  const copy = COPY[language];
   const [selectedDate, setSelectedDate] = useState(DELIVERY_OPTIONS[0]);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -74,7 +167,7 @@ export default function ProductDetailScreen() {
   };
 
   return (
-    <ScreenShell title="PRODUCT" subtitle={product.name} profileRoute="/profile">
+    <ScreenShell title={copy.shellTitle} subtitle={product.name} profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.grid}>
           <Panel style={styles.visualPanel}>
@@ -83,7 +176,7 @@ export default function ProductDetailScreen() {
 
               <View style={styles.visualTop}>
                 <Text style={[styles.visualCode, { color: theme.colors.textMuted }]}>
-                  SKU / {product.sku}
+                  {copy.sku} / {product.sku}
                 </Text>
                 <Text style={[styles.visualSize, { color: theme.colors.textPrimary }]}>
                   {product.formattedPrice}
@@ -115,10 +208,10 @@ export default function ProductDetailScreen() {
 
             <View style={styles.metaRows}>
               {[
-                ["CATEGORY", product.categoryName],
-                ["COMPOSITION", product.composition],
-                ["FITTING NOTES", product.fittingNotes],
-                ["DELIVERY", product.deliveryEstimate],
+                [copy.category, product.categoryName],
+                [copy.composition, product.composition],
+                [copy.fitNotes, product.fittingNotes],
+                [copy.delivery, product.deliveryEstimate],
               ].map(([label, value]) => (
                 <View key={label} style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
                   <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{label}</Text>
@@ -128,7 +221,7 @@ export default function ProductDetailScreen() {
             </View>
 
             <View style={styles.selectionBlock}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>SIZE SELECTION</Text>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.sizeSelection}</Text>
               <View style={styles.chipRow}>
                 {product.variants.map((variant) => (
                   <ChoiceChip
@@ -143,9 +236,7 @@ export default function ProductDetailScreen() {
 
             {product.availability === "preorder" ? (
               <View style={styles.selectionBlock}>
-                <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
-                  SELECT DELIVERY WINDOW
-                </Text>
+                <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.selectDelivery}</Text>
                 <View style={styles.chipRow}>
                   {DELIVERY_OPTIONS.map((option) => (
                     <ChoiceChip
@@ -160,20 +251,16 @@ export default function ProductDetailScreen() {
             ) : null}
 
             <Panel style={styles.tryOnPanel}>
-              <SectionHeading
-                title="AI TRY-ON PIPELINE"
-                subtitle="Paste a source image URL to create a saved try-on preview tied to your profile."
-                compact
-              />
+              <SectionHeading title={copy.tryOnTitle} subtitle={copy.tryOnSubtitle} compact />
               <MonoInput
-                label="SOURCE IMAGE URL"
+                label={copy.sourceImage}
                 value={photoUrl}
                 onChangeText={setPhotoUrl}
                 placeholder="https://..."
                 autoCapitalize="none"
               />
               <MonoButton
-                label={submittingTryOn ? "GENERATING..." : "CREATE TRY-ON"}
+                label={submittingTryOn ? copy.generating : copy.generate}
                 variant="secondary"
                 onPress={handleCreateTryOn}
               />
@@ -182,7 +269,7 @@ export default function ProductDetailScreen() {
                 {productTryOns.map((session) => (
                   <ChoiceChip
                     key={session.id}
-                    label={new Date(session.createdAt).toLocaleDateString()}
+                    label={new Date(session.createdAt).toLocaleDateString(language)}
                     active={selectedTryOnId === session.id}
                     onPress={() => setSelectedTryOnId(session.id)}
                   />
@@ -191,13 +278,29 @@ export default function ProductDetailScreen() {
             </Panel>
 
             <StatusPill
-              label={product.availability === "in_stock" ? "READY FOR CHECKOUT" : "PREORDER FLOW"}
+              label={product.availability === "in_stock" ? copy.ready : copy.preorder}
               tone={product.availability === "in_stock" ? "solid" : "ghost"}
             />
 
             <View style={styles.actionRow}>
               <MonoButton
-                label="CONTINUE TO CHECKOUT"
+                label={copy.addToCart}
+                variant="secondary"
+                onPress={() => {
+                  if (!activeVariantId) {
+                    return;
+                  }
+
+                  addToCart({
+                    productId: product.id,
+                    variantId: activeVariantId,
+                    scheduledDate: product.availability === "preorder" ? selectedDate : undefined,
+                    tryOnId: selectedTryOnId ?? undefined,
+                  });
+                }}
+              />
+              <MonoButton
+                label={copy.continue}
                 onPress={() =>
                   router.push({
                     pathname: `/client/checkout/${product.id}`,
@@ -210,7 +313,8 @@ export default function ProductDetailScreen() {
                   })
                 }
               />
-              <MonoButton label="BACK" variant="secondary" onPress={() => router.back()} />
+              <MonoButton label={copy.cart} variant="secondary" onPress={() => router.push("/client/cart")} />
+              <MonoButton label={copy.back} variant="secondary" onPress={() => router.back()} />
             </View>
           </Panel>
         </View>

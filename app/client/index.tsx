@@ -13,29 +13,119 @@ import { referenceTechJacket } from "../../src/lib/brandArt";
 import { useResolvedTheme } from "../../src/lib/theme";
 import { useRequireRole } from "../../src/lib/useRequireRole";
 import { useAppStore } from "../../src/store/useAppStore";
+import { AppLanguage } from "../../src/types";
+
+const COPY: Record<
+  AppLanguage,
+  {
+    shellTitle: string;
+    shellSubtitle: string;
+    heroBadge: string;
+    openProduct: string;
+    openProfile: string;
+    openCart: string;
+    category: string;
+    fitNotes: string;
+    delivery: string;
+    loyalty: string;
+    tryOns: string;
+    products: string;
+    categoriesTitle: string;
+    categoriesSubtitle: string;
+    activeOrderTitle: string;
+    activeOrderSubtitle: string;
+    catalogTitle: string;
+    catalogSubtitle: string;
+  }
+> = {
+  ru: {
+    shellTitle: "ВИТРИНА",
+    shellSubtitle: "КАТАЛОГ / TRY-ON / CHECKOUT",
+    heroBadge: "FEATURED DROP / PRODUCT SYSTEM",
+    openProduct: "ОТКРЫТЬ ТОВАР",
+    openProfile: "ОТКРЫТЬ ПРОФИЛЬ",
+    openCart: "ОТКРЫТЬ КОРЗИНУ",
+    category: "КАТЕГОРИЯ",
+    fitNotes: "ПОСАДКА",
+    delivery: "ДОСТАВКА",
+    loyalty: "СТАТУС ЛОЯЛЬНОСТИ",
+    tryOns: "TRY-ON СЕССИИ",
+    products: "ПРОДУКТЫ",
+    categoriesTitle: "КАТЕГОРИИ",
+    categoriesSubtitle: "Полноценный слой каталога с группировкой и более выверенной навигацией по ассортименту.",
+    activeOrderTitle: "АКТИВНЫЙ ЗАКАЗ",
+    activeOrderSubtitle: "Клиент видит живые обновления после действий франчайзи и производства.",
+    catalogTitle: "КАТАЛОГ",
+    catalogSubtitle: "Премиальные карточки товаров с медиа, ценой, размерами и контекстом категории.",
+  },
+  kk: {
+    shellTitle: "ВИТРИНА",
+    shellSubtitle: "КАТАЛОГ / TRY-ON / CHECKOUT",
+    heroBadge: "FEATURED DROP / PRODUCT SYSTEM",
+    openProduct: "ӨНІМДІ АШУ",
+    openProfile: "ПРОФИЛЬДІ АШУ",
+    openCart: "СЕБЕТТІ АШУ",
+    category: "САНАТ",
+    fitNotes: "ОТЫРЫМЫ",
+    delivery: "ЖЕТКІЗУ",
+    loyalty: "ЛОЯЛДЫҚ ДЕҢГЕЙІ",
+    tryOns: "TRY-ON СЕССИЯЛАРЫ",
+    products: "ӨНІМДЕР",
+    categoriesTitle: "САНАТТАР",
+    categoriesSubtitle: "Топталған каталог қабаты және ассортимент бойынша дәлірек навигация.",
+    activeOrderTitle: "БЕЛСЕНДІ ТАПСЫРЫС",
+    activeOrderSubtitle: "Клиент франчайзи мен өндіріс әрекеттерінен кейінгі жаңартуларды бірден көреді.",
+    catalogTitle: "КАТАЛОГ",
+    catalogSubtitle: "Медиа, баға, өлшем және санат контексті бар премиум өнім карталары.",
+  },
+  en: {
+    shellTitle: "VITRINA",
+    shellSubtitle: "CATALOG / TRY-ON / CHECKOUT",
+    heroBadge: "FEATURED DROP / PRODUCT SYSTEM",
+    openProduct: "OPEN PRODUCT",
+    openProfile: "OPEN PROFILE",
+    openCart: "OPEN CART",
+    category: "CATEGORY",
+    fitNotes: "FIT NOTES",
+    delivery: "DELIVERY",
+    loyalty: "LOYALTY STATUS",
+    tryOns: "TRY-ON SESSIONS",
+    products: "PRODUCTS",
+    categoriesTitle: "CATEGORIES",
+    categoriesSubtitle: "A full catalog layer with grouped navigation and tighter merchandising control.",
+    activeOrderTitle: "ACTIVE ORDER",
+    activeOrderSubtitle: "The client sees live updates after franchisee and production actions.",
+    catalogTitle: "CATALOG",
+    catalogSubtitle: "Premium product cards with media, pricing, sizing and category context.",
+  },
+};
 
 export default function ClientScreen() {
   const redirect = useRequireRole("client");
   const theme = useResolvedTheme();
+  const language = useAppStore((state) => state.language);
   const categories = useAppStore((state) => state.categories);
   const products = useAppStore((state) => state.products);
   const activeOrder = useAppStore((state) => state.activeOrder);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const user = useAppStore((state) => state.user);
+  const cartItems = useAppStore((state) => state.cartItems);
+  const copy = COPY[language];
 
   if (redirect) {
     return redirect;
   }
 
   const featuredProduct = products.find((product) => product.featured) ?? products[0];
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <ScreenShell title="VITRINA" subtitle="CATALOG / TRY-ON / CHECKOUT" profileRoute="/profile">
+    <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle} profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {featuredProduct ? (
           <Panel style={styles.heroPanel}>
             <View style={styles.heroCopy}>
-              <StatusPill label="FEATURED DROP / PRODUCT SYSTEM" tone="solid" />
+              <StatusPill label={copy.heroBadge} tone="solid" />
               <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>
                 {featuredProduct.name.toUpperCase()}
               </Text>
@@ -45,21 +135,26 @@ export default function ClientScreen() {
 
               <View style={styles.heroActions}>
                 <MonoButton
-                  label="OPEN PRODUCT"
+                  label={copy.openProduct}
                   onPress={() => router.push(`/client/product/${featuredProduct.id}`)}
                 />
                 <MonoButton
-                  label="OPEN PROFILE"
+                  label={copy.openProfile}
                   variant="secondary"
                   onPress={() => router.push("/profile")}
+                />
+                <MonoButton
+                  label={`${copy.openCart}${cartCount ? ` / ${cartCount}` : ""}`}
+                  variant="secondary"
+                  onPress={() => router.push("/client/cart")}
                 />
               </View>
 
               <View style={styles.specList}>
                 {[
-                  ["CATEGORY", featuredProduct.categoryName],
-                  ["FIT NOTES", featuredProduct.fittingNotes],
-                  ["DELIVERY", featuredProduct.deliveryEstimate],
+                  [copy.category, featuredProduct.categoryName],
+                  [copy.fitNotes, featuredProduct.fittingNotes],
+                  [copy.delivery, featuredProduct.deliveryEstimate],
                 ].map(([label, value]) => (
                   <View key={label} style={[styles.specRow, { borderColor: theme.colors.borderSoft }]}>
                     <Text style={[styles.specLabel, { color: theme.colors.textMuted }]}>{label}</Text>
@@ -76,6 +171,14 @@ export default function ClientScreen() {
                   source={featuredProduct.media[0]?.url ? { uri: featuredProduct.media[0].url } : referenceTechJacket}
                   style={styles.heroImage}
                   resizeMode="cover"
+                />
+                <View
+                  style={[
+                    styles.imageVeil,
+                    {
+                      backgroundColor: theme.colors.background,
+                    },
+                  ]}
                 />
 
                 <View style={styles.heroOverlayTop}>
@@ -94,7 +197,7 @@ export default function ClientScreen() {
                         {user?.loyaltyProgress ?? 0}%
                       </Text>
                       <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
-                        LOYALTY STATUS
+                        {copy.loyalty}
                       </Text>
                     </View>
 
@@ -103,7 +206,7 @@ export default function ClientScreen() {
                         {tryOnSessions.length}
                       </Text>
                       <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
-                        TRY-ON SESSIONS
+                        {copy.tryOns}
                       </Text>
                     </View>
 
@@ -112,7 +215,7 @@ export default function ClientScreen() {
                         {products.length}
                       </Text>
                       <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>
-                        PRODUCTS
+                        {copy.products}
                       </Text>
                     </View>
                   </View>
@@ -123,11 +226,7 @@ export default function ClientScreen() {
         ) : null}
 
         <Panel>
-          <SectionHeading
-            title="CATEGORIES"
-            subtitle="A real catalog layer with grouped product navigation and clearer merchandising."
-            compact
-          />
+          <SectionHeading title={copy.categoriesTitle} subtitle={copy.categoriesSubtitle} compact />
           <View style={styles.categoryRow}>
             {categories.map((category) => (
               <ChoiceChip
@@ -147,19 +246,12 @@ export default function ClientScreen() {
 
         {activeOrder ? (
           <Panel>
-            <SectionHeading
-              title="ACTIVE ORDER"
-              subtitle="The client sees live status changes after franchisee and atelier actions."
-              compact
-            />
+            <SectionHeading title={copy.activeOrderTitle} subtitle={copy.activeOrderSubtitle} compact />
             <OrderTracker order={activeOrder} />
           </Panel>
         ) : null}
 
-        <SectionHeading
-          title="CATALOG"
-          subtitle="Real product cards with media gallery, pricing, variants and category context."
-        />
+        <SectionHeading title={copy.catalogTitle} subtitle={copy.catalogSubtitle} />
 
         <View style={styles.catalogGrid}>
           {products.map((product) => (
@@ -188,15 +280,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   heroCopy: {
-    flex: 0.92,
+    flex: 0.9,
     minWidth: 280,
-    gap: 14,
+    gap: 16,
   },
   heroTitle: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 52,
-    lineHeight: 56,
-    letterSpacing: 0.8,
+    fontSize: 56,
+    lineHeight: 60,
+    letterSpacing: 1,
   },
   heroText: {
     fontFamily: "SpaceGrotesk_400Regular",
@@ -212,7 +304,7 @@ const styles = StyleSheet.create({
   },
   specList: {
     gap: 10,
-    paddingTop: 10,
+    paddingTop: 8,
   },
   specRow: {
     borderTopWidth: 1,
@@ -233,7 +325,7 @@ const styles = StyleSheet.create({
   heroVisualWrap: {
     flex: 1,
     minWidth: 320,
-    minHeight: 720,
+    minHeight: 760,
   },
   heroGlow: {
     position: "absolute",
@@ -254,6 +346,14 @@ const styles = StyleSheet.create({
   heroImage: {
     width: "100%",
     height: "100%",
+  },
+  imageVeil: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: "18%",
+    opacity: 0.2,
   },
   heroOverlayTop: {
     position: "absolute",
@@ -289,7 +389,7 @@ const styles = StyleSheet.create({
     padding: 18,
     justifyContent: "space-between",
     minHeight: 94,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   statValue: {
     fontFamily: "Oswald_500Medium",

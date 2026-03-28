@@ -2,7 +2,8 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useResolvedTheme } from "../lib/theme";
-import { Order, OrderStatus } from "../types";
+import { useAppStore } from "../store/useAppStore";
+import { AppLanguage, Order, OrderStatus } from "../types";
 
 const STEPS: OrderStatus[] = [
   "pending_franchisee",
@@ -12,9 +13,16 @@ const STEPS: OrderStatus[] = [
   "delivered",
 ];
 
+const STEP_META: Record<AppLanguage, string[]> = {
+  ru: ["ФРАНЧАЙЗИ", "АТЕЛЬЕ", "КОНТРОЛЬ", "ГОТОВО", "ДОСТАВЛЕНО"],
+  kk: ["ФРАНЧАЙЗИ", "АТЕЛЬЕ", "БАҚЫЛАУ", "ДАЙЫН", "ЖЕТКІЗІЛДІ"],
+  en: ["FRANCHISEE", "ATELIER", "QUALITY", "READY", "DELIVERED"],
+};
+
 export function OrderTracker({ order }: { order: Order }) {
   const theme = useResolvedTheme();
   const { t } = useTranslation();
+  const language = useAppStore((state) => state.language);
 
   return (
     <View style={styles.base}>
@@ -50,15 +58,7 @@ export function OrderTracker({ order }: { order: Order }) {
                 {t(`status.${step}`)}
               </Text>
               <Text style={[styles.stepMeta, { color: theme.colors.textMuted }]}>
-                {index === 0
-                  ? "FRANCHISEE DESK"
-                  : index === 1
-                    ? "ATELIER QUEUE"
-                    : index === 2
-                      ? "QUALITY CONTROL"
-                      : index === 3
-                        ? "CLIENT READY"
-                        : "DELIVERED"}
+                {STEP_META[language][index]}
               </Text>
             </View>
           </View>

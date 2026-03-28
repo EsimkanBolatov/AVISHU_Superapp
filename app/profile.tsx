@@ -1,8 +1,10 @@
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { LanguageSwitch } from "../src/components/LanguageSwitch";
 import { MonoButton } from "../src/components/MonoButton";
+import { MonoInput } from "../src/components/MonoInput";
 import { OrderTracker } from "../src/components/OrderTracker";
 import { Panel } from "../src/components/Panel";
 import { ScreenShell } from "../src/components/ScreenShell";
@@ -17,81 +19,145 @@ import { AppLanguage } from "../src/types";
 const COPY: Record<
   AppLanguage,
   {
-    subtitle: string;
+    shellTitle: string;
+    shellSubtitle: string;
+    liveAccount: string;
+    noPhone: string;
+    loyalty: string;
     themeTitle: string;
     themeSubtitle: string;
     languageTitle: string;
     languageSubtitle: string;
     accountTitle: string;
     accountSubtitle: string;
-    roleLabel: string;
-    tryOnLabel: string;
+    role: string;
+    tryOns: string;
+    editTitle: string;
+    editSubtitle: string;
+    name: string;
+    phone: string;
+    address: string;
+    cardBrand: string;
+    cardHolder: string;
+    cardLast4: string;
+    save: string;
+    saving: string;
     historyTitle: string;
     historySubtitle: string;
-    emptyHistory: string;
+    historyEmpty: string;
+    source: string;
+    result: string;
     trackerTitle: string;
     trackerSubtitle: string;
     signOut: string;
-    loyalty: string;
-    noPhone: string;
+    linkedCard: string;
+    noCard: string;
   }
 > = {
   ru: {
-    subtitle: "АККАУНТ / НАСТРОЙКИ / ИСТОРИЯ",
-    themeTitle: "ТЕМА",
-    themeSubtitle: "Ручное переключение светлого и темного режима должно оставаться доступным глобально.",
-    languageTitle: "ЯЗЫК",
-    languageSubtitle: "Русский, казахский и английский должны быть доступны как полноценная настройка профиля.",
-    accountTitle: "СОСТОЯНИЕ АККАУНТА",
-    accountSubtitle: "Реальная сессия, email пользователя и роль в продуктовой системе.",
-    roleLabel: "РОЛЬ",
-    tryOnLabel: "TRY-ON СЕССИИ",
-    historyTitle: "ИСТОРИЯ AI TRY-ON",
-    historySubtitle: "Сохраненные примерки и сгенерированные результаты, привязанные к профилю клиента.",
-    emptyHistory: "История примерок пока пуста. Создай первую fit-preview с карточки товара.",
-    trackerTitle: "ТРЕКЕР ЗАКАЗА",
-    trackerSubtitle: "Прогресс клиента обновляется после действий франчайзи и цеха в реальном времени.",
-    signOut: "ВЫЙТИ",
-    loyalty: "ЛОЯЛЬНОСТЬ",
+    shellTitle: "ПРОФИЛЬ",
+    shellSubtitle: "АККАУНТ / НАСТРОЙКИ / ИСТОРИЯ",
+    liveAccount: "LIVE ACCOUNT / SESSION",
     noPhone: "ТЕЛЕФОН НЕ ДОБАВЛЕН",
+    loyalty: "ЛОЯЛЬНОСТЬ",
+    themeTitle: "ТЕМА",
+    themeSubtitle: "Ручное переключение light и dark режима доступно на всем продукте.",
+    languageTitle: "ЯЗЫК",
+    languageSubtitle: "Русский, казахский и английский переключаются как постоянная пользовательская настройка.",
+    accountTitle: "СОСТОЯНИЕ АККАУНТА",
+    accountSubtitle: "Реальная авторизация, роль пользователя и рабочий слой профиля.",
+    role: "РОЛЬ",
+    tryOns: "TRY-ON СЕССИИ",
+    editTitle: "РЕДАКТИРОВАНИЕ ПРОФИЛЯ",
+    editSubtitle: "Контакты, адрес по умолчанию и данные привязанной карты для checkout-потока.",
+    name: "ИМЯ",
+    phone: "ТЕЛЕФОН",
+    address: "АДРЕС ПО УМОЛЧАНИЮ",
+    cardBrand: "БРЕНД КАРТЫ",
+    cardHolder: "ДЕРЖАТЕЛЬ КАРТЫ",
+    cardLast4: "ПОСЛЕДНИЕ 4 ЦИФРЫ",
+    save: "СОХРАНИТЬ ПРОФИЛЬ",
+    saving: "СОХРАНЕНИЕ...",
+    historyTitle: "ИСТОРИЯ AI TRY-ON",
+    historySubtitle: "Сохраненные fit-preview и generated results, связанные с клиентским профилем.",
+    historyEmpty: "История примерок пока пуста. Создай первый preview из карточки товара.",
+    source: "ИСХОДНИК",
+    result: "РЕЗУЛЬТАТ",
+    trackerTitle: "ТРЕКЕР ЗАКАЗА",
+    trackerSubtitle: "Статус клиента обновляется после действий франчайзи и производства в реальном времени.",
+    signOut: "ВЫЙТИ",
+    linkedCard: "ПРИВЯЗАННАЯ КАРТА",
+    noCard: "КАРТА НЕ УКАЗАНА",
   },
   kk: {
-    subtitle: "АККАУНТ / БАПТАУЛАР / ТАРИХ",
-    themeTitle: "ТЕМА",
-    themeSubtitle: "Жарық және қараңғы режимді қолмен ауыстыру бүкіл жүйеде қолжетімді болуы керек.",
-    languageTitle: "ТІЛ",
-    languageSubtitle: "Қазақ, орыс және ағылшын тілдері профильдегі толыққанды баптау ретінде болуы тиіс.",
-    accountTitle: "АККАУНТ КҮЙІ",
-    accountSubtitle: "Нақты сессия, пайдаланушы email-ы және өнім ішіндегі рөл.",
-    roleLabel: "РӨЛ",
-    tryOnLabel: "TRY-ON СЕССИЯЛАРЫ",
-    historyTitle: "AI TRY-ON ТАРИХЫ",
-    historySubtitle: "Клиент профиліне байланысқан сақталған preview және generated results.",
-    emptyHistory: "Try-on тарихы әзірге бос. Алғашқы fit-preview-ді өнім бетінен жаса.",
-    trackerTitle: "ТАПСЫРЫС ТРЕКЕРІ",
-    trackerSubtitle: "Клиент прогресі франчайзи мен өндіріс әрекеттерінен кейін нақты уақытта жаңарады.",
-    signOut: "ШЫҒУ",
-    loyalty: "ЛОЯЛДЫҚ",
+    shellTitle: "ПРОФИЛЬ",
+    shellSubtitle: "АККАУНТ / БАПТАУЛАР / ТАРИХ",
+    liveAccount: "LIVE ACCOUNT / SESSION",
     noPhone: "ТЕЛЕФОН ҚОСЫЛМАҒАН",
+    loyalty: "ЛОЯЛДЫҚ",
+    themeTitle: "ТЕМА",
+    themeSubtitle: "Light және dark режимдерін қолмен ауыстыру бүкіл өнімде қолжетімді.",
+    languageTitle: "ТІЛ",
+    languageSubtitle: "Орыс, қазақ және ағылшын тілдері тұрақты пайдаланушы параметрі ретінде сақталады.",
+    accountTitle: "АККАУНТ КҮЙІ",
+    accountSubtitle: "Нақты авторизация, пайдаланушы рөлі және профильдің жұмыс қабаты.",
+    role: "РӨЛ",
+    tryOns: "TRY-ON СЕССИЯЛАРЫ",
+    editTitle: "ПРОФИЛЬДІ ӨҢДЕУ",
+    editSubtitle: "Checkout ағыны үшін байланыс, әдепкі мекенжай және карта деректері.",
+    name: "АТЫ",
+    phone: "ТЕЛЕФОН",
+    address: "ӘДЕПКІ МЕКЕНЖАЙ",
+    cardBrand: "КАРТА БРЕНДІ",
+    cardHolder: "КАРТА ИЕСІ",
+    cardLast4: "СОҢҒЫ 4 САН",
+    save: "ПРОФИЛЬДІ САҚТАУ",
+    saving: "САҚТАЛУДА...",
+    historyTitle: "AI TRY-ON ТАРИХЫ",
+    historySubtitle: "Клиент профиліне байланған сақталған preview және generated results.",
+    historyEmpty: "Try-on тарихы әзірге бос. Алғашқы preview-ды өнім бетінен жаса.",
+    source: "БАСТАПҚЫ",
+    result: "НӘТИЖЕ",
+    trackerTitle: "ТАПСЫРЫС ТРЕКЕРІ",
+    trackerSubtitle: "Клиент статусы франчайзи мен өндіріс әрекеттерінен кейін нақты уақытта жаңарады.",
+    signOut: "ШЫҒУ",
+    linkedCard: "БАЙЛАНҒАН КАРТА",
+    noCard: "КАРТА КӨРСЕТІЛМЕГЕН",
   },
   en: {
-    subtitle: "ACCOUNT / PREFERENCES / HISTORY",
-    themeTitle: "THEME",
-    themeSubtitle: "Manual light and dark switching should remain globally available.",
-    languageTitle: "LANGUAGE",
-    languageSubtitle: "Russian, Kazakh and English should be available as a real profile-level preference.",
-    accountTitle: "ACCOUNT STATE",
-    accountSubtitle: "Real auth session, stored email and role inside the product system.",
-    roleLabel: "ROLE",
-    tryOnLabel: "TRY-ON SESSIONS",
-    historyTitle: "AI TRY-ON HISTORY",
-    historySubtitle: "Saved previews and generated results tied to the client profile.",
-    emptyHistory: "No try-on history yet. Generate your first fit preview from a product page.",
-    trackerTitle: "ORDER TRACKER",
-    trackerSubtitle: "Client progress updates from franchisee and atelier actions in real time.",
-    signOut: "SIGN OUT",
+    shellTitle: "PROFILE",
+    shellSubtitle: "ACCOUNT / SETTINGS / HISTORY",
+    liveAccount: "LIVE ACCOUNT / SESSION",
+    noPhone: "NO PHONE ADDED",
     loyalty: "LOYALTY",
-    noPhone: "NO PHONE",
+    themeTitle: "THEME",
+    themeSubtitle: "Manual light and dark switching stays available across the entire product.",
+    languageTitle: "LANGUAGE",
+    languageSubtitle: "Russian, Kazakh and English persist as a profile-level user preference.",
+    accountTitle: "ACCOUNT STATE",
+    accountSubtitle: "Real auth, user role and the live profile layer.",
+    role: "ROLE",
+    tryOns: "TRY-ON SESSIONS",
+    editTitle: "PROFILE EDITING",
+    editSubtitle: "Contact details, default shipping address and linked card data for the checkout flow.",
+    name: "NAME",
+    phone: "PHONE",
+    address: "DEFAULT ADDRESS",
+    cardBrand: "CARD BRAND",
+    cardHolder: "CARD HOLDER",
+    cardLast4: "LAST 4 DIGITS",
+    save: "SAVE PROFILE",
+    saving: "SAVING...",
+    historyTitle: "AI TRY-ON HISTORY",
+    historySubtitle: "Saved fit previews and generated results tied to the client profile.",
+    historyEmpty: "No try-on history yet. Create your first preview from a product page.",
+    source: "SOURCE",
+    result: "RESULT",
+    trackerTitle: "ORDER TRACKER",
+    trackerSubtitle: "Client status updates in real time after franchisee and production actions.",
+    signOut: "SIGN OUT",
+    linkedCard: "LINKED CARD",
+    noCard: "NO CARD SET",
   },
 };
 
@@ -101,24 +167,48 @@ export default function ProfileScreen() {
   const activeOrder = useAppStore((state) => state.activeOrder);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const logout = useAppStore((state) => state.logout);
+  const updateProfile = useAppStore((state) => state.updateProfile);
   const language = useAppStore((state) => state.language);
   const copy = COPY[language];
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [defaultShippingAddress, setDefaultShippingAddress] = useState("");
+  const [paymentCardBrand, setPaymentCardBrand] = useState("");
+  const [paymentCardHolder, setPaymentCardHolder] = useState("");
+  const [paymentCardLast4, setPaymentCardLast4] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    setName(user.name);
+    setPhone(user.phone ?? "");
+    setDefaultShippingAddress(user.defaultShippingAddress ?? "");
+    setPaymentCardBrand(user.paymentCardBrand ?? "");
+    setPaymentCardHolder(user.paymentCardHolder ?? "");
+    setPaymentCardLast4(user.paymentCardLast4 ?? "");
+  }, [user]);
 
   if (!user) {
     router.replace("/login");
     return null;
   }
 
+  const linkedCard = user.paymentCardBrand && user.paymentCardLast4
+    ? `${user.paymentCardBrand.toUpperCase()} •••• ${user.paymentCardLast4}`
+    : copy.noCard;
+
   return (
-    <ScreenShell title="PROFILE" subtitle={copy.subtitle}>
+    <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.identity}>
           <View style={styles.identityGrid}>
             <View style={styles.identityCopy}>
-              <StatusPill label={`${user.role.toUpperCase()} ACCOUNT / LIVE SESSION`} tone="solid" />
-              <Text style={[styles.name, { color: theme.colors.textPrimary }]}>
-                {user.name.toUpperCase()}
-              </Text>
+              <StatusPill label={`${user.role.toUpperCase()} / ${copy.liveAccount}`} tone="solid" />
+              <Text style={[styles.name, { color: theme.colors.textPrimary }]}>{user.name.toUpperCase()}</Text>
               <Text style={[styles.role, { color: theme.colors.textSecondary }]}>
                 {user.email} / {user.phone ?? copy.noPhone}
               </Text>
@@ -138,6 +228,21 @@ export default function ProfileScreen() {
               <Text style={[styles.progressText, { color: theme.colors.textMuted }]}>
                 {copy.loyalty} / {user.loyaltyProgress}% TO NEXT TIER
               </Text>
+
+              <View style={styles.identityMetaGrid}>
+                <View style={[styles.identityMeta, { borderColor: theme.colors.borderSoft }]}>
+                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.role}</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{user.role.toUpperCase()}</Text>
+                </View>
+                <View style={[styles.identityMeta, { borderColor: theme.colors.borderSoft }]}>
+                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.tryOns}</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{tryOnSessions.length}</Text>
+                </View>
+                <View style={[styles.identityMeta, { borderColor: theme.colors.borderSoft }]}>
+                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.linkedCard}</Text>
+                  <Text style={[styles.cardValue, { color: theme.colors.textPrimary }]}>{linkedCard}</Text>
+                </View>
+              </View>
             </View>
 
             <View style={[styles.identityVisual, { borderColor: theme.colors.borderSoft }]}>
@@ -165,19 +270,68 @@ export default function ProfileScreen() {
           <Panel style={styles.settingsPanel}>
             <SectionHeading title={copy.accountTitle} subtitle={copy.accountSubtitle} compact />
             <View style={styles.metaBlock}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.roleLabel}</Text>
-              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
-                {user.role.toUpperCase()}
-              </Text>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.role}</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{user.role.toUpperCase()}</Text>
             </View>
             <View style={styles.metaBlock}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.tryOnLabel}</Text>
-              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
-                {tryOnSessions.length}
-              </Text>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.tryOns}</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{tryOnSessions.length}</Text>
             </View>
           </Panel>
         </View>
+
+        <Panel style={styles.editorPanel}>
+          <SectionHeading title={copy.editTitle} subtitle={copy.editSubtitle} compact />
+          <View style={styles.editorGrid}>
+            <MonoInput label={copy.name} value={name} onChangeText={setName} placeholder={copy.name} />
+            <MonoInput label={copy.phone} value={phone} onChangeText={setPhone} placeholder="+7 ..." keyboardType="phone-pad" />
+            <MonoInput
+              label={copy.address}
+              value={defaultShippingAddress}
+              onChangeText={setDefaultShippingAddress}
+              placeholder={copy.address}
+              multiline
+            />
+            <MonoInput
+              label={copy.cardBrand}
+              value={paymentCardBrand}
+              onChangeText={setPaymentCardBrand}
+              placeholder="VISA / MASTERCARD / KASPI"
+            />
+            <MonoInput
+              label={copy.cardHolder}
+              value={paymentCardHolder}
+              onChangeText={setPaymentCardHolder}
+              placeholder={copy.cardHolder}
+            />
+            <MonoInput
+              label={copy.cardLast4}
+              value={paymentCardLast4}
+              onChangeText={(value) => setPaymentCardLast4(value.replace(/\D/g, "").slice(0, 4))}
+              keyboardType="number-pad"
+              placeholder="0000"
+            />
+          </View>
+
+          <MonoButton
+            label={isSaving ? copy.saving : copy.save}
+            onPress={async () => {
+              setIsSaving(true);
+              try {
+                await updateProfile({
+                  name,
+                  phone,
+                  defaultShippingAddress,
+                  paymentCardBrand,
+                  paymentCardHolder,
+                  paymentCardLast4,
+                });
+              } finally {
+                setIsSaving(false);
+              }
+            }}
+          />
+        </Panel>
 
         {user.role === "client" ? (
           <Panel>
@@ -195,17 +349,26 @@ export default function ProfileScreen() {
                       },
                     ]}
                   >
-                    <Image
-                      source={{ uri: session.resultImageUrl ?? session.sourceImageUrl }}
-                      style={styles.tryOnImage}
-                      resizeMode="cover"
-                    />
+                    <View style={styles.tryOnVisualRow}>
+                      <View style={styles.tryOnVisual}>
+                        <Image source={{ uri: session.sourceImageUrl }} style={styles.tryOnImage} resizeMode="cover" />
+                        <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.source}</Text>
+                      </View>
+                      <View style={styles.tryOnVisual}>
+                        <Image
+                          source={{ uri: session.resultImageUrl ?? session.sourceImageUrl }}
+                          style={styles.tryOnImage}
+                          resizeMode="cover"
+                        />
+                        <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.result}</Text>
+                      </View>
+                    </View>
                     <View style={styles.tryOnCopy}>
                       <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
                         {session.status.toUpperCase()}
                       </Text>
                       <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
-                        {new Date(session.createdAt).toLocaleDateString()}
+                        {new Date(session.createdAt).toLocaleDateString(language)}
                       </Text>
                       <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>
                         {session.notes}
@@ -214,9 +377,7 @@ export default function ProfileScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>
-                  {copy.emptyHistory}
-                </Text>
+                <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>{copy.historyEmpty}</Text>
               )}
             </View>
           </Panel>
@@ -258,12 +419,12 @@ const styles = StyleSheet.create({
   },
   identityCopy: {
     flex: 1,
-    minWidth: 280,
-    gap: 14,
+    minWidth: 300,
+    gap: 16,
   },
   name: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 44,
+    fontSize: 46,
     letterSpacing: 1.8,
   },
   role: {
@@ -284,10 +445,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.2,
   },
+  identityMetaGrid: {
+    gap: 10,
+  },
+  identityMeta: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+    gap: 6,
+  },
   identityVisual: {
     flex: 0.9,
     minWidth: 280,
-    minHeight: 360,
+    minHeight: 420,
     borderWidth: 1,
     borderRadius: 26,
     overflow: "hidden",
@@ -328,6 +497,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     letterSpacing: 0.8,
   },
+  cardValue: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 14,
+    letterSpacing: 1.1,
+  },
+  editorPanel: {
+    gap: 16,
+  },
+  editorGrid: {
+    gap: 12,
+  },
   tryOnGrid: {
     gap: 12,
   },
@@ -336,9 +516,26 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     overflow: "hidden",
   },
+  tryOnVisualRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  tryOnVisual: {
+    flex: 1,
+    minWidth: 220,
+    minHeight: 240,
+  },
   tryOnImage: {
     width: "100%",
-    height: 220,
+    height: 240,
+  },
+  tryOnMeta: {
+    position: "absolute",
+    left: 14,
+    bottom: 12,
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.5,
   },
   tryOnCopy: {
     padding: 16,

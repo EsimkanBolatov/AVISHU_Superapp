@@ -1,9 +1,10 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChoiceChip } from "../src/components/ChoiceChip";
+import { LanguageSwitch } from "../src/components/LanguageSwitch";
 import { MonoButton } from "../src/components/MonoButton";
 import { MonoInput } from "../src/components/MonoInput";
 import { Panel } from "../src/components/Panel";
@@ -12,6 +13,7 @@ import { ThemeSwitch } from "../src/components/ThemeSwitch";
 import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
+import { AppLanguage } from "../src/types";
 
 const ACCESS_PRESETS = [
   {
@@ -31,14 +33,119 @@ const ACCESS_PRESETS = [
   },
 ];
 
+const COPY: Record<
+  AppLanguage,
+  {
+    back: string;
+    badge: string;
+    title: string;
+    copy: string;
+    signIn: string;
+    register: string;
+    name: string;
+    email: string;
+    password: string;
+    namePlaceholder: string;
+    emailPlaceholder: string;
+    passwordPlaceholder: string;
+    processing: string;
+    enter: string;
+    createAccount: string;
+    qa: string;
+    authError: string;
+    visualMeta: string;
+    visualTitle: string;
+    checklist: string[];
+  }
+> = {
+  ru: {
+    back: "НАЗАД К ЛЕНДИНГУ",
+    badge: "REAL AUTH / SESSION FLOW",
+    title: "ВХОД ЧЕРЕЗ РЕАЛЬНУЮ УЧЕТНУЮ ЗАПИСЬ, А НЕ DEMO ROLE SWITCHING",
+    copy: "Система уже использует email, пароль и настоящую сессию. Регистрация создает клиентский аккаунт, а business-профили помогают проверять процессы франчайзи и производства.",
+    signIn: "ВОЙТИ",
+    register: "РЕГИСТРАЦИЯ",
+    name: "ИМЯ",
+    email: "EMAIL",
+    password: "ПАРОЛЬ",
+    namePlaceholder: "Ваше полное имя",
+    emailPlaceholder: "client@avishu.kz",
+    passwordPlaceholder: "Минимум 8 символов",
+    processing: "ОБРАБОТКА...",
+    enter: "ВОЙТИ В СИСТЕМУ",
+    createAccount: "СОЗДАТЬ АККАУНТ",
+    qa: "ТЕСТОВЫЙ ДОСТУП",
+    authError: "Не удалось выполнить вход.",
+    visualMeta: "PRODUCT PLATFORM / CREDENTIAL ACCESS / OPERATIONAL DEPTH",
+    visualTitle: "АККАУНТ, КАТАЛОГ, TRY-ON И БИЗНЕС-ОПЕРАЦИИ В ЕДИНОМ ПРОДУКТОВОМ СЛОЕ",
+    checklist: [
+      "Клиентская регистрация и сохраненная авторизация.",
+      "Каталог франчайзи, управление товарами и заказами.",
+      "Производственный поток со статусами, комментариями и файлами.",
+    ],
+  },
+  kk: {
+    back: "ЛЕНДИНГКЕ ҚАЙТУ",
+    badge: "REAL AUTH / SESSION FLOW",
+    title: "DEMO ROLE SWITCH ЕМЕС, НАҚТЫ АККАУНТ АРҚЫЛЫ КІРУ",
+    copy: "Жүйе енді email, пароль және нақты сессиямен жұмыс істейді. Тіркелу клиенттік аккаунт жасайды, ал бизнес-профильдер франчайзи мен өндіріс ағындарын тексеруге мүмкіндік береді.",
+    signIn: "КІРУ",
+    register: "ТІРКЕЛУ",
+    name: "АТЫ",
+    email: "EMAIL",
+    password: "ҚҰПИЯСӨЗ",
+    namePlaceholder: "Толық атыңыз",
+    emailPlaceholder: "client@avishu.kz",
+    passwordPlaceholder: "Кемінде 8 таңба",
+    processing: "ӨҢДЕЛУДЕ...",
+    enter: "ЖҮЙЕГЕ КІРУ",
+    createAccount: "АККАУНТ ҚҰРУ",
+    qa: "ТЕСТ ҚОЛЖЕТІМІ",
+    authError: "Кіру орындалмады.",
+    visualMeta: "PRODUCT PLATFORM / CREDENTIAL ACCESS / OPERATIONAL DEPTH",
+    visualTitle: "АККАУНТ, КАТАЛОГ, TRY-ON ЖӘНЕ БИЗНЕС ОПЕРАЦИЯЛАРЫ БІР ПЛАТФОРМАДА",
+    checklist: [
+      "Клиенттік тіркелу және сақталатын авторизация.",
+      "Франчайзи каталогы, тауарлар мен тапсырыстарды басқару.",
+      "Статус, пікір және файлдары бар өндірістік ағын.",
+    ],
+  },
+  en: {
+    back: "BACK TO LANDING",
+    badge: "REAL AUTH / SESSION FLOW",
+    title: "SIGN IN THROUGH REAL ACCOUNT ACCESS, NOT DEMO ROLE SWITCHING",
+    copy: "The system now runs on email, password and a real session layer. Registration creates a client account, while business profiles validate franchisee and production operations.",
+    signIn: "SIGN IN",
+    register: "REGISTER",
+    name: "NAME",
+    email: "EMAIL",
+    password: "PASSWORD",
+    namePlaceholder: "Your full name",
+    emailPlaceholder: "client@avishu.kz",
+    passwordPlaceholder: "Minimum 8 characters",
+    processing: "PROCESSING...",
+    enter: "ENTER SYSTEM",
+    createAccount: "CREATE ACCOUNT",
+    qa: "SEEDED ACCESS",
+    authError: "Authentication failed.",
+    visualMeta: "PRODUCT PLATFORM / CREDENTIAL ACCESS / OPERATIONAL DEPTH",
+    visualTitle: "ACCOUNT LAYER, CATALOG SYSTEM, TRY-ON PIPELINE AND BUSINESS OPERATIONS",
+    checklist: [
+      "Client registration and persistent auth session.",
+      "Franchisee catalog, product editing and order control.",
+      "Production flow with stage changes, comments and files.",
+    ],
+  },
+};
+
 export default function LoginScreen() {
   const theme = useResolvedTheme();
   const language = useAppStore((state) => state.language);
-  const setLanguage = useAppStore((state) => state.setLanguage);
   const login = useAppStore((state) => state.login);
   const register = useAppStore((state) => state.register);
   const isLoading = useAppStore((state) => state.isLoading);
   const user = useAppStore((state) => state.user);
+  const copy = COPY[language];
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -57,7 +164,7 @@ export default function LoginScreen() {
       currentUser.role === "client"
         ? "/client"
         : currentUser.role === "franchisee"
-          ? "/franchisee"
+          ? (Platform.OS === "web" ? "/admin" : "/franchisee")
           : "/production",
     );
   };
@@ -74,7 +181,7 @@ export default function LoginScreen() {
 
       routeByRole();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Authentication failed.");
+      setError(submitError instanceof Error ? submitError.message : copy.authError);
     }
   };
 
@@ -82,127 +189,84 @@ export default function LoginScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.topbar}>
-          <MonoButton label="BACK TO LANDING" variant="secondary" onPress={() => router.replace("/")} />
+          <MonoButton label={copy.back} variant="secondary" onPress={() => router.replace("/")} />
           <View style={styles.topbarRight}>
-            <View style={styles.localeRow}>
-              {(["ru", "kk", "en"] as const).map((item) => (
-                <Pressable
-                  key={item}
-                  onPress={() => setLanguage(item)}
-                  style={[
-                    styles.localeChip,
-                    {
-                      backgroundColor:
-                        language === item ? theme.colors.accent : theme.colors.surface,
-                      borderColor: theme.colors.borderSoft,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.localeText,
-                      {
-                        color:
-                          language === item
-                            ? theme.colors.accentContrast
-                            : theme.colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {item.toUpperCase()}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <LanguageSwitch />
             <ThemeSwitch />
           </View>
         </View>
 
         <View style={styles.grid}>
           <Panel style={styles.leftPanel}>
-            <StatusPill label="REAL AUTH / SESSION FLOW" tone="solid" />
+            <StatusPill label={copy.badge} tone="solid" />
             <Text style={[styles.brand, { color: theme.colors.textPrimary }]}>AVISHU</Text>
-            <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-              SIGN IN THROUGH REAL ACCOUNT ACCESS, NOT DEMO ROLE SWITCHING
-            </Text>
-            <Text style={[styles.copy, { color: theme.colors.textSecondary }]}>
-              The project now uses email and password sessions. Registration creates a real client
-              account, while seeded business accounts let us validate franchisee and atelier flows.
-            </Text>
+            <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{copy.title}</Text>
+            <Text style={[styles.copy, { color: theme.colors.textSecondary }]}>{copy.copy}</Text>
 
             <View style={styles.modeRow}>
-              <ChoiceChip label="SIGN IN" active={mode === "login"} onPress={() => setMode("login")} />
-              <ChoiceChip
-                label="REGISTER"
-                active={mode === "register"}
-                onPress={() => setMode("register")}
-              />
+              <ChoiceChip label={copy.signIn} active={mode === "login"} onPress={() => setMode("login")} />
+              <ChoiceChip label={copy.register} active={mode === "register"} onPress={() => setMode("register")} />
             </View>
 
             <View style={styles.form}>
               {mode === "register" ? (
                 <MonoInput
-                  label="NAME"
+                  label={copy.name}
                   value={name}
                   onChangeText={setName}
-                  placeholder="Your full name"
+                  placeholder={copy.namePlaceholder}
                 />
               ) : null}
               <MonoInput
-                label="EMAIL"
+                label={copy.email}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                placeholder="client@avishu.kz"
+                placeholder={copy.emailPlaceholder}
               />
               <MonoInput
-                label="PASSWORD"
+                label={copy.password}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                placeholder="Minimum 8 characters"
+                placeholder={copy.passwordPlaceholder}
               />
             </View>
 
             {error ? <Text style={[styles.error, { color: "#B3261E" }]}>{error}</Text> : null}
 
             <MonoButton
-              label={isLoading ? "PROCESSING..." : mode === "login" ? "ENTER SYSTEM" : "CREATE ACCOUNT"}
+              label={isLoading ? copy.processing : mode === "login" ? copy.enter : copy.createAccount}
               onPress={handleSubmit}
             />
 
             <View style={styles.presetBlock}>
-              <Text style={[styles.presetLabel, { color: theme.colors.textMuted }]}>
-                SEEDED ACCESS FOR QA
-              </Text>
+              <Text style={[styles.presetLabel, { color: theme.colors.textMuted }]}>{copy.qa}</Text>
               <View style={styles.presetList}>
                 {ACCESS_PRESETS.map((preset) => (
-                  <Pressable
-                    key={preset.label}
-                    onPress={() => {
-                      setMode("login");
-                      setEmail(preset.email);
-                      setPassword(preset.password);
-                    }}
-                    style={[
-                      styles.presetCard,
-                      {
-                        borderColor: theme.colors.borderSoft,
-                        backgroundColor: theme.colors.surfaceSecondary,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.presetTitle, { color: theme.colors.textPrimary }]}>
-                      {preset.label}
-                    </Text>
+                  <Panel key={preset.label} style={styles.presetCard}>
+                    <View style={styles.presetHead}>
+                      <Text style={[styles.presetTitle, { color: theme.colors.textPrimary }]}>
+                        {preset.label}
+                      </Text>
+                      <MonoButton
+                        label={copy.signIn}
+                        variant="secondary"
+                        onPress={() => {
+                          setMode("login");
+                          setEmail(preset.email);
+                          setPassword(preset.password);
+                        }}
+                      />
+                    </View>
                     <Text style={[styles.presetText, { color: theme.colors.textSecondary }]}>
                       {preset.email}
                     </Text>
-                    <Text style={[styles.presetText, { color: theme.colors.textMuted }]}>
+                    <Text style={[styles.presetHint, { color: theme.colors.textMuted }]}>
                       {preset.password}
                     </Text>
-                  </Pressable>
+                  </Panel>
                 ))}
               </View>
             </View>
@@ -210,33 +274,27 @@ export default function LoginScreen() {
 
           <Panel style={styles.rightPanel}>
             <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
-            <Text style={[styles.visualMeta, { color: theme.colors.textMuted }]}>
-              PRODUCT PLATFORM / CREDENTIAL ACCESS / OPERATIONAL DEPTH
-            </Text>
+            <Text style={[styles.visualMeta, { color: theme.colors.textMuted }]}>{copy.visualMeta}</Text>
             <Text style={[styles.visualTitle, { color: theme.colors.textPrimary }]}>
-              ACCOUNT LAYER, CATALOG SYSTEM, TRY-ON PIPELINE AND BUSINESS OPERATIONS
+              {copy.visualTitle}
             </Text>
-            <View style={styles.visualFrame}>
-              <View style={[styles.visualImageWrap, { borderColor: theme.colors.borderSoft }]}>
-                <View style={[styles.visualImageInner, { backgroundColor: theme.colors.surfaceSecondary }]}>
-                  <Image source={referenceTechJacket} style={styles.imageFill} resizeMode="cover" />
-                  <View
-                    style={[
-                      styles.visualVeil,
-                      {
-                        backgroundColor: theme.colors.backgroundSecondary,
-                      },
-                    ]}
-                  />
-                </View>
+
+            <View style={[styles.visualFrame, { borderColor: theme.colors.borderSoft }]}>
+              <View style={[styles.visualInner, { backgroundColor: theme.colors.surfaceSecondary }]}>
+                <Image source={referenceTechJacket} style={styles.imageFill} resizeMode="cover" />
+                <View
+                  style={[
+                    styles.visualVeil,
+                    {
+                      backgroundColor: theme.colors.background,
+                    },
+                  ]}
+                />
               </View>
             </View>
+
             <View style={styles.visualChecklist}>
-              {[
-                "Client registration and persistent auth session.",
-                "Franchisee catalog CRUD and order control.",
-                "Production queue with stage progression and files.",
-              ].map((item) => (
+              {copy.checklist.map((item) => (
                 <View key={item} style={[styles.checkRow, { borderColor: theme.colors.borderSoft }]}>
                   <Text style={[styles.checkText, { color: theme.colors.textSecondary }]}>{item}</Text>
                 </View>
@@ -272,53 +330,37 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: "center",
   },
-  localeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  localeChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  localeText: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 10,
-    letterSpacing: 1.4,
-  },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 18,
   },
   leftPanel: {
-    flex: 1.08,
+    flex: 1.02,
     minWidth: 340,
-    gap: 16,
+    gap: 18,
   },
   rightPanel: {
-    flex: 0.92,
+    flex: 0.98,
     minWidth: 320,
     minHeight: 980,
-    gap: 16,
+    gap: 18,
     overflow: "hidden",
   },
   brand: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 74,
-    letterSpacing: 3.2,
+    fontSize: 76,
+    letterSpacing: 3.6,
   },
   title: {
-    maxWidth: 640,
+    maxWidth: 720,
     fontFamily: "Oswald_500Medium",
-    fontSize: 42,
-    lineHeight: 46,
-    letterSpacing: 0.7,
+    fontSize: 46,
+    lineHeight: 50,
+    letterSpacing: 1.1,
   },
   copy: {
-    maxWidth: 620,
+    maxWidth: 650,
     fontFamily: "SpaceGrotesk_400Regular",
     fontSize: 15,
     lineHeight: 25,
@@ -338,31 +380,40 @@ const styles = StyleSheet.create({
   },
   presetBlock: {
     gap: 10,
-    paddingTop: 6,
+    paddingTop: 8,
   },
   presetLabel: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
-    letterSpacing: 1.5,
+    letterSpacing: 1.6,
   },
   presetList: {
     gap: 10,
   },
   presetCard: {
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 14,
-    gap: 6,
+    gap: 8,
+  },
+  presetHead: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 10,
+    alignItems: "center",
   },
   presetTitle: {
     fontFamily: "Oswald_500Medium",
     fontSize: 24,
-    letterSpacing: 0.8,
+    letterSpacing: 0.9,
   },
   presetText: {
-    fontFamily: "SpaceGrotesk_400Regular",
+    fontFamily: "SpaceGrotesk_500Medium",
     fontSize: 13,
     lineHeight: 20,
+  },
+  presetHint: {
+    fontFamily: "SpaceGrotesk_400Regular",
+    fontSize: 12,
+    lineHeight: 18,
   },
   visualGlow: {
     position: "absolute",
@@ -371,48 +422,46 @@ const styles = StyleSheet.create({
     width: 360,
     height: 360,
     borderRadius: 999,
-    opacity: 0.85,
+    opacity: 0.84,
   },
   visualMeta: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
-    letterSpacing: 1.6,
+    letterSpacing: 1.7,
   },
   visualTitle: {
-    maxWidth: 360,
+    maxWidth: 520,
     fontFamily: "Oswald_500Medium",
-    fontSize: 32,
-    lineHeight: 36,
-    letterSpacing: 0.7,
+    fontSize: 38,
+    lineHeight: 42,
+    letterSpacing: 0.9,
   },
   visualFrame: {
     flex: 1,
-  },
-  visualImageWrap: {
-    flex: 1,
+    minHeight: 560,
     borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: 28,
     overflow: "hidden",
   },
-  visualImageInner: {
+  visualInner: {
     flex: 1,
     overflow: "hidden",
   },
   imageFill: {
     position: "absolute",
-    right: -320,
-    bottom: -54,
-    width: 1120,
-    height: 1040,
-    transform: [{ scale: 1.06 }],
+    right: -340,
+    bottom: -58,
+    width: 1180,
+    height: 1080,
+    transform: [{ scale: 1.05 }],
   },
   visualVeil: {
     position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    width: "26%",
-    opacity: 0.82,
+    width: "24%",
+    opacity: 0.8,
   },
   visualChecklist: {
     gap: 10,

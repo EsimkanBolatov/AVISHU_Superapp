@@ -2,11 +2,12 @@ import * as Localization from "expo-localization";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
-const defaultLanguage = Localization.getLocales()[0]?.languageCode ?? "ru";
+const detectedLanguage = Localization.getLocales()[0]?.languageCode ?? "ru";
+const initialLanguage = ["ru", "kk", "en"].includes(detectedLanguage) ? detectedLanguage : "ru";
 
 void i18n.use(initReactI18next).init({
   compatibilityJSON: "v4",
-  lng: ["ru", "kk", "en"].includes(defaultLanguage) ? defaultLanguage : "ru",
+  lng: initialLanguage,
   fallbackLng: "ru",
   resources: {
     ru: {
