@@ -1,4 +1,4 @@
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ChoiceChip } from "../../../components/ChoiceChip";
 import { MonoButton } from "../../../components/MonoButton";
@@ -51,6 +51,7 @@ export function ClientHomeExperience({
   sections,
   searchValue,
   onSearchChange,
+  onOpenCollection,
   onOpenProduct,
   onOpenProfile,
   onOpenCart,
@@ -167,26 +168,32 @@ export function ClientHomeExperience({
 
       <View style={styles.collectionGrid}>
         {collections.map((collection) => (
-          <Panel key={collection.id} style={styles.collectionCard}>
-            <View style={[styles.collectionVisual, { borderColor: theme.colors.borderSoft }]}>
-              <Image
-                source={collection.coverUrl ? { uri: collection.coverUrl } : getProductImageSource()}
-                style={styles.collectionImage}
-                resizeMode="cover"
-              />
-            </View>
-            <View style={styles.collectionCopy}>
-              <Text style={[styles.collectionCount, { color: theme.colors.textMuted }]}>
-                {collection.countLabel}
-              </Text>
-              <Text style={[styles.collectionTitle, { color: theme.colors.textPrimary }]}>
-                {collection.title}
-              </Text>
-              <Text style={[styles.collectionText, { color: theme.colors.textSecondary }]}>
-                {collection.description}
-              </Text>
-            </View>
-          </Panel>
+          <Pressable
+            key={collection.id}
+            onPress={() => onOpenCollection(collection.id)}
+            style={styles.collectionPressable}
+          >
+            <Panel style={styles.collectionCard}>
+              <View style={[styles.collectionVisual, { borderColor: theme.colors.borderSoft }]}>
+                <Image
+                  source={collection.coverUrl ? { uri: collection.coverUrl } : getProductImageSource()}
+                  style={styles.collectionImage}
+                  resizeMode="cover"
+                />
+              </View>
+              <View style={styles.collectionCopy}>
+                <Text style={[styles.collectionCount, { color: theme.colors.textMuted }]}>
+                  {collection.countLabel}
+                </Text>
+                <Text style={[styles.collectionTitle, { color: theme.colors.textPrimary }]}>
+                  {collection.title}
+                </Text>
+                <Text style={[styles.collectionText, { color: theme.colors.textSecondary }]}>
+                  {collection.description}
+                </Text>
+              </View>
+            </Panel>
+          </Pressable>
         ))}
       </View>
 
@@ -374,10 +381,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 16,
   },
-  collectionCard: {
+  collectionPressable: {
     flexBasis: 260,
     flexGrow: 1,
+  },
+  collectionCard: {
     gap: 16,
+    height: "100%",
   },
   collectionVisual: {
     height: 180,

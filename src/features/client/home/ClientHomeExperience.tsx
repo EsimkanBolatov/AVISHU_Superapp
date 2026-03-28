@@ -1,4 +1,4 @@
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ChoiceChip } from "../../../components/ChoiceChip";
 import { MonoButton } from "../../../components/MonoButton";
@@ -51,6 +51,7 @@ export function ClientHomeExperience({
   sections,
   searchValue,
   onSearchChange,
+  onOpenCollection,
   onOpenProduct,
   onOpenProfile,
   onOpenCart,
@@ -130,8 +131,9 @@ export function ClientHomeExperience({
         <SectionHeading title={copy.collectionsTitle} subtitle={copy.collectionsSubtitle} compact />
         <View style={styles.collectionsGrid}>
           {collections.map((collection) => (
-            <View
+            <Pressable
               key={collection.id}
+              onPress={() => onOpenCollection(collection.id)}
               style={[
                 styles.collectionCard,
                 {
@@ -154,7 +156,7 @@ export function ClientHomeExperience({
               <Text style={[styles.collectionText, { color: theme.colors.textSecondary }]}>
                 {collection.description}
               </Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       </Panel>

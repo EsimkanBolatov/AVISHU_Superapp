@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
@@ -195,8 +195,7 @@ export default function ProfileScreen() {
   }, [user]);
 
   if (!user) {
-    router.replace("/login");
-    return null;
+    return <Redirect href="/login" />;
   }
 
   const linkedCard = user.paymentCardBrand && user.paymentCardLast4
@@ -355,13 +354,13 @@ export default function ProfileScreen() {
                   >
                     <View style={styles.tryOnVisualRow}>
                       <View style={[styles.tryOnVisual, isCompact && styles.tryOnVisualCompact]}>
-                        <Image source={{ uri: session.sourceImageUrl }} style={[styles.tryOnImage, isCompact && styles.tryOnImageCompact]} resizeMode="cover" />
+                        <Image source={{ uri: session.sourceImageUrl }} style={styles.tryOnImage} resizeMode="cover" />
                         <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.source}</Text>
                       </View>
                       <View style={[styles.tryOnVisual, isCompact && styles.tryOnVisualCompact]}>
                         <Image
                           source={{ uri: session.resultImageUrl ?? session.sourceImageUrl }}
-                          style={[styles.tryOnImage, isCompact && styles.tryOnImageCompact]}
+                          style={styles.tryOnImage}
                           resizeMode="cover"
                         />
                         <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.result}</Text>
@@ -422,7 +421,8 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   identityGridCompact: {
-    gap: 14,
+    flexDirection: "column-reverse", // Главный трюк: переворачиваем порядок, чтобы фото было сверху
+    gap: 24,
   },
   identityCopy: {
     flex: 1,
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
   },
   nameCompact: {
-    fontSize: 32,
+    fontSize: 34,
     letterSpacing: 1.1,
   },
   role: {
@@ -473,8 +473,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   identityVisualCompact: {
+    flex: 0,            // Сбрасываем десктопный флекс
     minWidth: "100%",
-    minHeight: 260,
+    minHeight: "auto",  // Убираем жесткую высоту
+    aspectRatio: 1,     // Делаем красивый квадрат на мобилке
+    borderRadius: 24,
   },
   visualGlow: {
     position: "absolute",
@@ -538,18 +541,15 @@ const styles = StyleSheet.create({
   tryOnVisual: {
     flex: 1,
     minWidth: 220,
-    minHeight: 240,
+    aspectRatio: 4 / 5, // Пропорция для десктопа вместо жесткой высоты
   },
   tryOnVisualCompact: {
     minWidth: "100%",
-    minHeight: 160,
+    aspectRatio: 1,     // Квадратные картинки примерок на мобилке
   },
   tryOnImage: {
     width: "100%",
-    height: 240,
-  },
-  tryOnImageCompact: {
-    height: 160,
+    height: "100%",     // Картинка сама растянется по заданному aspectRatio
   },
   tryOnMeta: {
     position: "absolute",

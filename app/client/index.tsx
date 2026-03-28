@@ -270,6 +270,7 @@ export default function ClientScreen() {
         sections={sections}
         searchValue={searchValue}
         onSearchChange={setSearchValue}
+        onOpenCollection={(collectionId) => router.push(`/client/collection/${collectionId}`)}
         onOpenProduct={(productId) => router.push(`/client/product/${productId}`)}
         onOpenProfile={() => router.push("/profile")}
         onOpenCart={() => router.push("/client/cart")}

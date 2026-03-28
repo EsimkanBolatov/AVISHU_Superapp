@@ -66,6 +66,7 @@ export interface ClientHomeViewModel {
   sections: CatalogSectionVm[];
   searchValue: string;
   onSearchChange: (value: string) => void;
+  onOpenCollection: (collectionId: string) => void;
   onOpenProduct: (productId: string) => void;
   onOpenProfile: () => void;
   onOpenCart: () => void;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { ChoiceChip } from "../../src/components/ChoiceChip";
 import { MetricCard } from "../../src/components/MetricCard";
@@ -149,6 +149,7 @@ const COPY: Record<
 export default function FranchiseeScreen() {
   const redirect = useRequireRole("franchisee");
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const metrics = useAppStore((state) => state.metrics);
   const orders = useAppStore((state) => state.orders);
@@ -157,6 +158,8 @@ export default function FranchiseeScreen() {
   const addOrderAttachment = useAppStore((state) => state.addOrderAttachment);
   const products = useAppStore((state) => state.products);
   const copy = COPY[language];
+
+  const isCompact = width < 760;
 
   const [tab, setTab] = useState<FranchiseeTab>("overview");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -206,10 +209,10 @@ export default function FranchiseeScreen() {
               <MetricCard label={copy.orderCount} value={String(metrics.orders)} />
             </View>
 
-            <View style={styles.analyticsGrid}>
+            <View style={[styles.analyticsGrid, isCompact && styles.analyticsGridCompact]}>
               <Panel style={styles.analyticsLead}>
                 <StatusPill label={copy.leadBadge} tone="solid" />
-                <Text style={[styles.analyticsTitle, { color: theme.colors.textPrimary }]}>
+                <Text style={[styles.analyticsTitle, isCompact && styles.analyticsTitleCompact, { color: theme.colors.textPrimary }]}>
                   {copy.leadTitle}
                 </Text>
                 <Text style={[styles.analyticsCopy, { color: theme.colors.textSecondary }]}>
@@ -217,7 +220,7 @@ export default function FranchiseeScreen() {
                 </Text>
               </Panel>
 
-              <Panel style={styles.analyticsVisual}>
+              <Panel style={[styles.analyticsVisual, isCompact && styles.analyticsVisualCompact]}>
                 <Image
                   source={leadVisual?.media[0]?.url ? { uri: leadVisual.media[0].url } : referenceTechJacket}
                   style={styles.analyticsImage}
@@ -369,17 +372,28 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 16,
   },
+  analyticsGridCompact: {
+    flexDirection: "column-reverse", // На мобилке картинка товара встанет над текстом
+    gap: 16,
+  },
   analyticsLead: {
     flex: 1,
-    minWidth: 300,
+    minWidth: 280, // Уменьшено с 300
     gap: 14,
   },
   analyticsVisual: {
     flex: 0.9,
-    minWidth: 300,
+    minWidth: 280, // Уменьшено с 300
     minHeight: 320,
     padding: 0,
     overflow: "hidden",
+  },
+  analyticsVisualCompact: {
+    flex: 0,
+    minWidth: "100%",
+    minHeight: "auto",
+    aspectRatio: 4 / 3, // Горизонтальная резиновая картинка для мобилки
+    borderRadius: 24,
   },
   analyticsImage: {
     width: "100%",
@@ -390,6 +404,10 @@ const styles = StyleSheet.create({
     fontSize: 38,
     lineHeight: 42,
     letterSpacing: 0.8,
+  },
+  analyticsTitleCompact: {
+    fontSize: 28, // Более компактный заголовок для телефонов
+    lineHeight: 32,
   },
   analyticsCopy: {
     fontFamily: "SpaceGrotesk_400Regular",
@@ -422,7 +440,7 @@ const styles = StyleSheet.create({
   },
   column: {
     flex: 1,
-    minWidth: 300,
+    minWidth: 280, // Безопасная минимальная ширина для узких экранов
     gap: 16,
   },
   columnList: {
