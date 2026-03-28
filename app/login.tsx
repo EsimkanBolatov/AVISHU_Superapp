@@ -1,46 +1,39 @@
 import { router } from "expo-router";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MonoButton } from "../src/components/MonoButton";
 import { Panel } from "../src/components/Panel";
-import { SectionHeading } from "../src/components/SectionHeading";
 import { StatusPill } from "../src/components/StatusPill";
 import { ThemeSwitch } from "../src/components/ThemeSwitch";
+import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
 import { Role } from "../src/types";
 
 const ROLES: Array<{
   role: Role;
-  eyebrow: string;
-  title: string;
+  label: string;
+  meta: string;
   copy: string;
 }> = [
   {
     role: "client",
-    eyebrow: "B2C / VITRINA",
-    title: "КЛИЕНТ",
-    copy: "Каталог, карточка товара, покупка, предзаказ, лояльность и трекинг статуса заказа.",
+    label: "CLIENT",
+    meta: "STORE FRONT",
+    copy: "Product discovery, purchase, preorder scheduling and live order tracking.",
   },
   {
     role: "franchisee",
-    eyebrow: "B2B / CONTROL TOWER",
-    title: "ФРАНЧАЙЗИ",
-    copy: "Дашборд, живая очередь новых заказов и перевод заказа в производство без перезагрузки.",
+    label: "FRANCHISEE",
+    meta: "CONTROL TOWER",
+    copy: "Revenue dashboard, incoming order queue and production dispatch layer.",
   },
   {
     role: "production",
-    eyebrow: "ATELIER / MASTER TABLET",
-    title: "ЦЕХ",
-    copy: "Крупные контрастные карточки задач и финализация этапа пошива одним действием.",
+    label: "PRODUCTION",
+    meta: "ATELIER TABLET",
+    copy: "Large controls, task queue and stage completion for garment execution.",
   },
 ];
 
@@ -53,18 +46,7 @@ export default function LoginScreen() {
 
   const handleLogin = async (role: Role) => {
     await login(role);
-
-    if (role === "client") {
-      router.replace("/client");
-      return;
-    }
-
-    if (role === "franchisee") {
-      router.replace("/franchisee");
-      return;
-    }
-
-    router.replace("/production");
+    router.replace(role === "client" ? "/client" : role === "franchisee" ? "/franchisee" : "/production");
   };
 
   return (
@@ -72,96 +54,110 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.topbar}>
           <MonoButton label="BACK TO LANDING" variant="secondary" onPress={() => router.replace("/")} />
-          <ThemeSwitch />
-        </View>
-        <View style={styles.hero}>
-          <StatusPill label="AVISHU SUPERAPP / CORE MVP" tone="solid" />
-          <Text style={[styles.brand, { color: theme.colors.textPrimary }]}>AVISHU</Text>
-          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-            ПРЕМИАЛЬНЫЙ CORE-ЭКОСИСТЕМЫ ДЛЯ ВИТРИНЫ, ДАШБОРДА И ЦЕХА
-          </Text>
-          <Text style={[styles.copy, { color: theme.colors.textSecondary }]}>
-            Монохромный интерфейс с живым потоком заказов, адаптивом под web/mobile и
-            строгим дизайн-кодом из ТЗ.
-          </Text>
-          <View style={styles.localeRow}>
-            {(["ru", "kk", "en"] as const).map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setLanguage(item)}
-                style={[
-                  styles.localeChip,
-                  {
-                    backgroundColor:
-                      language === item ? theme.colors.textPrimary : theme.colors.surfaceSecondary,
-                    borderColor: theme.colors.border,
-                  },
-                ]}
-              >
-                <Text
+          <View style={styles.topbarRight}>
+            <View style={styles.localeRow}>
+              {(["ru", "kk", "en"] as const).map((item) => (
+                <Pressable
+                  key={item}
+                  onPress={() => setLanguage(item)}
                   style={[
-                    styles.localeText,
+                    styles.localeChip,
                     {
-                      color:
-                        language === item ? theme.colors.background : theme.colors.textSecondary,
+                      backgroundColor:
+                        language === item ? theme.colors.accent : theme.colors.surface,
+                      borderColor: theme.colors.borderSoft,
                     },
                   ]}
                 >
-                  {item.toUpperCase()}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    style={[
+                      styles.localeText,
+                      {
+                        color:
+                          language === item
+                            ? theme.colors.accentContrast
+                            : theme.colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {item.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <ThemeSwitch />
           </View>
         </View>
 
         <View style={styles.grid}>
-          {ROLES.map((item, index) => (
-            <Panel key={item.role} style={styles.roleCard}>
-              <Text style={[styles.eyebrow, { color: theme.colors.textMuted }]}>{item.eyebrow}</Text>
-              <SectionHeading title={item.title} subtitle={item.copy} compact />
-              <View style={styles.featureList}>
-                <Text style={[styles.feature, { color: theme.colors.textSecondary }]}>
-                  0{index + 1} / LIVE ORDER FLOW
-                </Text>
-                <Text style={[styles.feature, { color: theme.colors.textSecondary }]}>
-                  0{index + 4} / RESPONSIVE LAYOUT
-                </Text>
-                <Text style={[styles.feature, { color: theme.colors.textSecondary }]}>
-                  0{index + 7} / STRICT MONOCHROME UI
-                </Text>
-              </View>
-              <MonoButton
-                label={isLoading ? "ВХОД..." : `ВОЙТИ КАК ${item.title}`}
-                onPress={() => handleLogin(item.role)}
-              />
-            </Panel>
-          ))}
-        </View>
+          <Panel style={styles.leftPanel}>
+            <StatusPill label="ACCESS / ROLE GATE" tone="solid" />
+            <Text style={[styles.brand, { color: theme.colors.textPrimary }]}>AVISHU</Text>
+            <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
+              ENTER THE SYSTEM THROUGH THE ROLE YOU WANT TO VALIDATE
+            </Text>
+            <Text style={[styles.copy, { color: theme.colors.textSecondary }]}>
+              This should become a real authentication and routing gateway, but for now it works as
+              a clear multi-role entry to validate client, business and atelier UX.
+            </Text>
 
-        <Panel style={styles.protocol}>
-          <Text style={[styles.protocolLabel, { color: theme.colors.textMuted }]}>DEMO FLOW</Text>
-          <View style={styles.protocolSteps}>
-            {[
-              "Клиент оформляет заказ в каталоге.",
-              "Франчайзи видит его в новой колонке и отправляет в производство.",
-              "Цех завершает этап и клиент сразу получает статус READY.",
-            ].map((step, index) => (
-              <View key={step} style={styles.protocolRow}>
-                <Text style={[styles.protocolIndex, { color: theme.colors.textMuted }]}>
-                  0{index + 1}
-                </Text>
-                <Text style={[styles.protocolText, { color: theme.colors.textSecondary }]}>
-                  {step}
-                </Text>
-              </View>
-            ))}
-          </View>
-          {isLoading ? (
-            <View style={styles.loaderRow}>
-              <ActivityIndicator color={theme.colors.textPrimary} />
+            <View style={styles.roleList}>
+              {ROLES.map((item) => (
+                <Panel key={item.role} style={styles.roleCard}>
+                  <View style={styles.roleHead}>
+                    <Text style={[styles.roleMeta, { color: theme.colors.textMuted }]}>
+                      {item.meta}
+                    </Text>
+                    <Text style={[styles.roleLabel, { color: theme.colors.textPrimary }]}>
+                      {item.label}
+                    </Text>
+                  </View>
+                  <Text style={[styles.roleCopy, { color: theme.colors.textSecondary }]}>
+                    {item.copy}
+                  </Text>
+                  <MonoButton
+                    label={isLoading ? "OPENING..." : `ENTER AS ${item.label}`}
+                    onPress={() => handleLogin(item.role)}
+                  />
+                </Panel>
+              ))}
             </View>
-          ) : null}
-        </Panel>
+
+            {isLoading ? (
+              <View style={styles.loaderRow}>
+                <ActivityIndicator color={theme.colors.textPrimary} />
+              </View>
+            ) : null}
+          </Panel>
+
+          <Panel style={styles.rightPanel}>
+            <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
+            <Text style={[styles.visualMeta, { color: theme.colors.textMuted }]}>
+              FUTURE COMMERCE REFERENCE / COLD RETAIL SYSTEM
+            </Text>
+            <Text style={[styles.visualTitle, { color: theme.colors.textPrimary }]}>
+              IMAGE-LED UI, STRICT TYPE AND OPERATIONAL DEPTH
+            </Text>
+            <View style={styles.visualFrame}>
+              <View style={[styles.visualImageWrap, { borderColor: theme.colors.borderSoft }]}>
+                <View style={[styles.visualImageInner, { backgroundColor: theme.colors.surfaceSecondary }]}>
+                  <Image source={referenceTechJacket} style={styles.imageFill} resizeMode="cover" />
+                </View>
+              </View>
+            </View>
+            <View style={styles.visualChecklist}>
+              {[
+                "Replace generic cards with image-first product modules.",
+                "Elevate typography hierarchy to premium editorial retail level.",
+                "Move from MVP feel to branded system concept.",
+              ].map((item) => (
+                <View key={item} style={[styles.checkRow, { borderColor: theme.colors.borderSoft }]}>
+                  <Text style={[styles.checkText, { color: theme.colors.textSecondary }]}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </Panel>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -174,107 +170,150 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 36,
     gap: 18,
-  },
-  hero: {
-    gap: 14,
-    paddingTop: 12,
   },
   topbar: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+  },
+  topbarRight: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
     alignItems: "center",
   },
-  brand: {
-    fontFamily: "Oswald_500Medium",
-    fontSize: 78,
-    letterSpacing: 4,
-  },
-  title: {
-    maxWidth: 760,
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 30,
-    lineHeight: 40,
-    letterSpacing: 1.6,
-  },
-  copy: {
-    maxWidth: 720,
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 15,
-    lineHeight: 24,
-  },
   localeRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
-    paddingTop: 8,
   },
   localeChip: {
     borderWidth: 1,
+    borderRadius: 999,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 11,
   },
   localeText: {
     fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 11,
-    letterSpacing: 1.2,
+    fontSize: 10,
+    letterSpacing: 1.4,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
-  },
-  roleCard: {
-    flexBasis: 300,
-    flexGrow: 1,
-    minHeight: 260,
-    justifyContent: "space-between",
     gap: 18,
   },
-  eyebrow: {
-    fontFamily: "SpaceGrotesk_500Medium",
-    fontSize: 11,
-    letterSpacing: 1.6,
-  },
-  featureList: {
-    gap: 10,
-  },
-  feature: {
-    fontFamily: "SpaceGrotesk_500Medium",
-    fontSize: 13,
-    letterSpacing: 0.7,
-  },
-  protocol: {
+  leftPanel: {
+    flex: 1.08,
+    minWidth: 340,
     gap: 16,
   },
-  protocolLabel: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 11,
-    letterSpacing: 1.8,
+  rightPanel: {
+    flex: 0.92,
+    minWidth: 320,
+    minHeight: 980,
+    gap: 16,
+    overflow: "hidden",
   },
-  protocolSteps: {
-    gap: 12,
-  },
-  protocolRow: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  protocolIndex: {
-    width: 28,
+  brand: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 20,
+    fontSize: 74,
+    letterSpacing: 3.2,
   },
-  protocolText: {
-    flex: 1,
+  title: {
+    maxWidth: 640,
+    fontFamily: "Oswald_500Medium",
+    fontSize: 42,
+    lineHeight: 46,
+    letterSpacing: 0.7,
+  },
+  copy: {
+    maxWidth: 620,
+    fontFamily: "SpaceGrotesk_400Regular",
+    fontSize: 15,
+    lineHeight: 25,
+  },
+  roleList: {
+    gap: 12,
+  },
+  roleCard: {
+    gap: 14,
+  },
+  roleHead: {
+    gap: 6,
+  },
+  roleMeta: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.5,
+  },
+  roleLabel: {
+    fontFamily: "Oswald_500Medium",
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: 0.9,
+  },
+  roleCopy: {
     fontFamily: "SpaceGrotesk_400Regular",
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   loaderRow: {
-    paddingTop: 6,
-    alignItems: "flex-start",
+    paddingTop: 4,
+  },
+  visualGlow: {
+    position: "absolute",
+    top: -90,
+    right: -70,
+    width: 360,
+    height: 360,
+    borderRadius: 999,
+    opacity: 0.85,
+  },
+  visualMeta: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.6,
+  },
+  visualTitle: {
+    maxWidth: 360,
+    fontFamily: "Oswald_500Medium",
+    fontSize: 32,
+    lineHeight: 36,
+    letterSpacing: 0.7,
+  },
+  visualFrame: {
+    flex: 1,
+  },
+  visualImageWrap: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 22,
+    overflow: "hidden",
+  },
+  visualImageInner: {
+    flex: 1,
+    overflow: "hidden",
+  },
+  imageFill: {
+    width: "118%",
+    height: "100%",
+    alignSelf: "flex-end",
+  },
+  visualChecklist: {
+    gap: 10,
+  },
+  checkRow: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+  },
+  checkText: {
+    fontFamily: "SpaceGrotesk_500Medium",
+    fontSize: 13,
+    lineHeight: 22,
   },
 });

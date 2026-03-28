@@ -17,8 +17,8 @@ export function StatusPill({
       style={[
         styles.base,
         {
-          backgroundColor: solid ? theme.colors.textPrimary : theme.colors.surfaceSecondary,
-          borderColor: theme.colors.border,
+          backgroundColor: solid ? theme.colors.accent : theme.colors.surface,
+          borderColor: solid ? theme.colors.accent : theme.colors.borderSoft,
         },
       ]}
     >
@@ -26,7 +26,7 @@ export function StatusPill({
         style={[
           styles.label,
           {
-            color: solid ? theme.colors.background : theme.colors.textSecondary,
+            color: solid ? theme.colors.accentContrast : theme.colors.textSecondary,
           },
         ]}
       >
@@ -40,12 +40,13 @@ const styles = StyleSheet.create({
   base: {
     alignSelf: "flex-start",
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    borderRadius: 999,
   },
   label: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
-    letterSpacing: 1.6,
+    letterSpacing: 1.4,
   },
 });

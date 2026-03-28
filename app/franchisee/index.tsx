@@ -43,6 +43,7 @@ export default function FranchiseeScreen() {
       <View style={styles.columnHeader}>
         <SectionHeading title={title} subtitle={`${list.length} ORDERS`} compact />
       </View>
+
       <View style={styles.columnList}>
         {list.map((order) => (
           <Panel key={order.id} style={styles.orderCard}>
@@ -82,7 +83,7 @@ export default function FranchiseeScreen() {
 
         {(isDesktop || mobileTab === "orders") && (
           <View style={styles.board}>
-            {renderColumn("NEW", pendingOrders, "В ПРОИЗВОДСТВО", "in_production")}
+            {renderColumn("NEW", pendingOrders, "SEND TO ATELIER", "in_production")}
             {renderColumn("ATELIER", productionOrders)}
             {renderColumn("READY", readyOrders)}
           </View>
@@ -93,7 +94,7 @@ export default function FranchiseeScreen() {
             style={[
               styles.mobileNav,
               {
-                borderColor: theme.colors.border,
+                borderColor: theme.colors.borderSoft,
                 backgroundColor: theme.colors.surface,
               },
             ]}
@@ -110,14 +111,15 @@ export default function FranchiseeScreen() {
                 }}
                 style={[
                   styles.mobileNavItem,
-                  key === mobileTab && { backgroundColor: theme.colors.textPrimary },
+                  key === mobileTab && { backgroundColor: theme.colors.accent },
                 ]}
               >
                 <Text
                   style={[
                     styles.mobileNavText,
                     {
-                      color: key === mobileTab ? theme.colors.background : theme.colors.textSecondary,
+                      color:
+                        key === mobileTab ? theme.colors.accentContrast : theme.colors.textSecondary,
                     },
                   ]}
                 >
@@ -132,10 +134,10 @@ export default function FranchiseeScreen() {
           <Panel>
             <SectionHeading
               title="PROFILE SHORTCUT"
-              subtitle="На мобильной версии нижняя навигация заменяет классический desktop sidebar."
+              subtitle="On mobile, the bottom navigation replaces the classic desktop control layout."
               compact
             />
-            <MonoButton label="ОТКРЫТЬ ПРОФИЛЬ" onPress={() => setMobileTab("orders")} />
+            <MonoButton label="RETURN TO ORDERS" onPress={() => setMobileTab("orders")} />
           </Panel>
         ) : null}
       </ScrollView>
@@ -191,6 +193,7 @@ const styles = StyleSheet.create({
   mobileNav: {
     flexDirection: "row",
     borderWidth: 1,
+    borderRadius: 22,
     padding: 6,
     gap: 6,
   },
@@ -198,6 +201,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     alignItems: "center",
+    borderRadius: 16,
   },
   mobileNavText: {
     fontFamily: "SpaceGrotesk_700Bold",

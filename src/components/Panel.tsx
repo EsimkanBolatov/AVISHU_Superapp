@@ -29,5 +29,14 @@ const styles = StyleSheet.create({
   base: {
     borderWidth: 1,
     padding: 18,
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
   },
 });

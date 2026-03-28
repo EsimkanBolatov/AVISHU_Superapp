@@ -35,7 +35,7 @@ export function ScreenShell({
           style={[
             styles.topbar,
             {
-              borderColor: theme.colors.border,
+              borderColor: theme.colors.borderSoft,
               backgroundColor: theme.colors.surface,
             },
           ]}
@@ -55,8 +55,9 @@ export function ScreenShell({
                 style={[
                   styles.navItem,
                   pathname.startsWith(ROLE_ROUTES[role]) && {
-                    backgroundColor: theme.colors.textPrimary,
+                    backgroundColor: theme.colors.accent,
                   },
+                  { borderColor: theme.colors.borderSoft },
                 ]}
               >
                 <Text
@@ -65,7 +66,7 @@ export function ScreenShell({
                     {
                       color:
                         pathname.startsWith(ROLE_ROUTES[role])
-                          ? theme.colors.background
+                          ? theme.colors.accentContrast
                           : theme.colors.textSecondary,
                     },
                   ]}
@@ -80,7 +81,7 @@ export function ScreenShell({
             <ThemeSwitch />
             <Pressable
               onPress={() => router.push(profileRoute ?? "/profile")}
-              style={[styles.profile, { borderColor: theme.colors.border }]}
+              style={[styles.profile, { borderColor: theme.colors.borderSoft }]}
             >
               <Text style={[styles.profileLabel, { color: theme.colors.textPrimary }]}>
                 {user?.name ?? "GUEST"}
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
   },
   topbar: {
     borderWidth: 1,
-    minHeight: 84,
+    minHeight: 88,
     paddingHorizontal: 18,
     paddingVertical: 12,
     flexDirection: "row",
@@ -114,14 +115,15 @@ const styles = StyleSheet.create({
     gap: 16,
     alignItems: "center",
     justifyContent: "space-between",
+    borderRadius: 24,
   },
   brandBlock: {
     gap: 2,
   },
   brand: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 26,
-    letterSpacing: 2,
+    fontSize: 24,
+    letterSpacing: 2.4,
   },
   subtitle: {
     fontFamily: "SpaceGrotesk_700Bold",
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "transparent",
+    borderRadius: 999,
   },
   navText: {
     fontFamily: "SpaceGrotesk_700Bold",
@@ -150,6 +152,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    borderRadius: 999,
   },
   actions: {
     flexDirection: "row",

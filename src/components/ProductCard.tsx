@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { referenceTechJacket } from "../lib/brandArt";
 import { useResolvedTheme } from "../lib/theme";
 import { Product } from "../types";
 import { StatusPill } from "./StatusPill";
@@ -20,26 +21,35 @@ export function ProductCard({
         styles.card,
         {
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
+          borderColor: theme.colors.borderSoft,
         },
       ]}
     >
-      <View
-        style={[
-          styles.visual,
-          {
-            backgroundColor: theme.colors.surfaceSecondary,
-            borderColor: theme.colors.border,
-          },
-        ]}
-      />
+      <View style={[styles.visualWrap, { borderColor: theme.colors.borderSoft }]}>
+        <View style={[styles.glow, { backgroundColor: theme.colors.glow }]} />
+        <Image source={referenceTechJacket} style={styles.image} resizeMode="cover" />
+        <View style={styles.visualTop}>
+          <StatusPill label={product.availability === "in_stock" ? "READY STOCK" : "PREORDER"} />
+          <Text style={[styles.sku, { color: theme.colors.textMuted }]}>{product.sku}</Text>
+        </View>
+      </View>
+
       <View style={styles.content}>
-        <StatusPill label={product.availability === "in_stock" ? "IN STOCK" : "PREORDER"} />
-        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{product.name}</Text>
-        <Text style={[styles.price, { color: theme.colors.textSecondary }]}>{product.price}</Text>
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-          {product.style.join(" / ").toUpperCase()}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{product.name}</Text>
+          <Text style={[styles.price, { color: theme.colors.textPrimary }]}>{product.price}</Text>
+        </View>
+
+        <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+          {product.description}
         </Text>
+
+        <View style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
+          <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>STYLE</Text>
+          <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>
+            {product.style.join(" / ").toUpperCase()}
+          </Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -48,32 +58,82 @@ export function ProductCard({
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    flexBasis: 280,
+    borderRadius: 28,
+    flexBasis: 340,
     flexGrow: 1,
-    minHeight: 320,
+    overflow: "hidden",
+    minHeight: 470,
   },
-  visual: {
-    height: 220,
+  visualWrap: {
+    height: 290,
     borderBottomWidth: 1,
+    overflow: "hidden",
+    justifyContent: "space-between",
+  },
+  glow: {
+    position: "absolute",
+    top: -60,
+    left: -40,
+    width: 260,
+    height: 260,
+    borderRadius: 999,
+    opacity: 0.72,
+  },
+  image: {
+    position: "absolute",
+    right: -70,
+    bottom: -16,
+    width: 300,
+    height: 320,
+  },
+  visualTop: {
+    padding: 18,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+  },
+  sku: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.4,
   },
   content: {
-    padding: 16,
-    gap: 10,
+    padding: 18,
+    gap: 14,
+  },
+  header: {
+    gap: 8,
   },
   title: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 24,
-    lineHeight: 28,
-    letterSpacing: 1,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: 0.9,
   },
   price: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 13,
-    letterSpacing: 1,
+    letterSpacing: 1.3,
   },
-  meta: {
+  description: {
+    fontFamily: "SpaceGrotesk_400Regular",
+    fontSize: 14,
+    lineHeight: 23,
+  },
+  metaRow: {
+    borderTopWidth: 1,
+    paddingTop: 12,
+    gap: 7,
+  },
+  metaLabel: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.5,
+  },
+  metaValue: {
     fontFamily: "SpaceGrotesk_500Medium",
-    fontSize: 11,
-    letterSpacing: 1.4,
+    fontSize: 12,
+    letterSpacing: 1,
   },
 });

@@ -24,7 +24,7 @@ export function MonoButton({
         styles.base,
         isLarge && styles.large,
         {
-          backgroundColor: isPrimary ? theme.colors.textPrimary : theme.colors.surfaceSecondary,
+          backgroundColor: isPrimary ? theme.colors.accent : theme.colors.surface,
           borderColor: theme.colors.border,
         },
       ]}
@@ -34,7 +34,7 @@ export function MonoButton({
           styles.label,
           isLarge && styles.largeLabel,
           {
-            color: isPrimary ? theme.colors.background : theme.colors.textPrimary,
+            color: isPrimary ? theme.colors.accentContrast : theme.colors.textPrimary,
           },
         ]}
       >
@@ -46,23 +46,24 @@ export function MonoButton({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
-    paddingHorizontal: 18,
+    minHeight: 52,
+    paddingHorizontal: 20,
     paddingVertical: 14,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
+    borderRadius: 14,
   },
   large: {
-    minHeight: 74,
-    paddingHorizontal: 24,
+    minHeight: 76,
+    paddingHorizontal: 28,
   },
   label: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 11,
-    letterSpacing: 1.6,
+    letterSpacing: 1.8,
   },
   largeLabel: {
-    fontSize: 15,
+    fontSize: 14,
   },
 });

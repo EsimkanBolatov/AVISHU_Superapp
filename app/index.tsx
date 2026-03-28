@@ -1,35 +1,26 @@
 import { Redirect, router } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MonoButton } from "../src/components/MonoButton";
 import { Panel } from "../src/components/Panel";
-import { SectionHeading } from "../src/components/SectionHeading";
 import { StatusPill } from "../src/components/StatusPill";
 import { ThemeSwitch } from "../src/components/ThemeSwitch";
+import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
 
-const PILLARS = [
-  {
-    title: "MONOCHROME WARDROBE",
-    copy: "Tailoring, dresses, shirts and sharp layers assembled into one strict visual language.",
-  },
-  {
-    title: "ATELIER RHYTHM",
-    copy: "Ready-to-wear and preorder live in one system, so the brand feels premium and operationally clear.",
-  },
-  {
-    title: "CITY-LED EDITORIAL",
-    copy: "The store is built like a magazine spread: contrast, negative space, typography and calm confidence.",
-  },
+const FEATURE_ROWS = [
+  ["ULTRA CLEAN SHELL", "Layered premium outerwear and tech-tailoring silhouettes."],
+  ["AI FIT / COMMERCE READY", "Try-on, preorder and ready-stock flows in one premium interface."],
+  ["STORE TO ATELIER LOOP", "Client, franchisee and production roles share one live order spine."],
 ];
 
-const JOURNEY = [
-  "DISCOVER curated looks and key silhouettes.",
-  "CHOOSE ready-to-wear or preorder format.",
-  "TRACK the atelier status in real time.",
-  "RETURN for loyalty growth and future drops.",
+const SYSTEM_ROWS = [
+  "01 / PREMIUM OUTERWEAR",
+  "02 / PREORDER MECHANICS",
+  "03 / TECHNICAL PRODUCT STORY",
+  "04 / MONOCHROME EXPERIENCE",
 ];
 
 export default function IndexScreen() {
@@ -52,72 +43,74 @@ export default function IndexScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.topbar}>
-          <StatusPill label="AVISHU / STORE LANDING" tone="solid" />
-          <ThemeSwitch />
+          <View style={styles.topbarLeft}>
+            <Text style={[styles.logo, { color: theme.colors.textPrimary }]}>AVISHU</Text>
+            <Text style={[styles.topbarMeta, { color: theme.colors.textMuted }]}>
+              FUTURE OUTERWEAR / COMMERCE SYSTEM
+            </Text>
+          </View>
+          <View style={styles.topbarRight}>
+            <ThemeSwitch />
+            <StatusPill label="LIVE PROTOTYPE / 2026" tone="ghost" />
+          </View>
         </View>
 
         <View style={styles.hero}>
-          <View style={styles.heroCopy}>
-            <Text style={[styles.brand, { color: theme.colors.textPrimary }]}>AVISHU</Text>
-            <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-              A STORE FOR STRICT TAILORING, QUIET LUXURY AND MONOCHROME CONFIDENCE
+          <View style={styles.heroLeft}>
+            <StatusPill label="REFERENCE DIRECTION / TECH RETAIL" tone="solid" />
+            <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>AVISHU SYSTEM DROP</Text>
+            <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>
+              FUTURE OUTERWEAR STORE WITH PRODUCT STORY, FIT TECH AND LIVE ORDER OPERATIONS
             </Text>
-            <Text style={[styles.copy, { color: theme.colors.textSecondary }]}>
-              AVISHU is a fashion space where editorial styling meets real atelier workflow. The
-              store combines clean silhouettes, premium blacks and whites, preorder mechanics and a
-              loyalty rhythm for returning clients.
+            <Text style={[styles.heroCopy, { color: theme.colors.textSecondary }]}>
+              The next version of AVISHU should feel closer to Krakatau, Acronym and advanced
+              editorial retail than to a generic marketplace. We shift from demo cards to a cold,
+              precise, image-led commerce experience.
             </Text>
-            <View style={styles.ctaRow}>
-              <MonoButton label="ENTER DEMO" onPress={() => router.push("/login")} />
-              <MonoButton label="OPEN VITRINA" variant="secondary" onPress={() => router.push("/login")} />
+
+            <View style={styles.heroActions}>
+              <MonoButton label="ENTER EXPERIENCE" onPress={() => router.push("/login")} />
+              <MonoButton label="OPEN CLIENT VITRINA" variant="secondary" onPress={() => router.push("/login")} />
             </View>
-          </View>
 
-          <Panel style={styles.heroPanel}>
-            <Text style={[styles.panelLabel, { color: theme.colors.textMuted }]}>STORE CODE</Text>
-            <Text style={[styles.panelValue, { color: theme.colors.textPrimary }]}>BLACK / WHITE / SPACE</Text>
-            <Text style={[styles.panelText, { color: theme.colors.textSecondary }]}>
-              The brand language is built around contrast, structure, long silhouettes and
-              intentional restraint instead of loud decoration.
-            </Text>
-          </Panel>
-        </View>
-
-        <View style={styles.pillarGrid}>
-          {PILLARS.map((pillar) => (
-            <Panel key={pillar.title} style={styles.pillarCard}>
-              <SectionHeading title={pillar.title} subtitle={pillar.copy} compact />
-            </Panel>
-          ))}
-        </View>
-
-        <View style={styles.editorialRow}>
-          <Panel style={styles.editorialMain}>
-            <SectionHeading
-              title="WHAT THE STORE SELLS"
-              subtitle="Outerwear, dresses, suits and studio separates designed to be mixed into precise monochrome capsules."
-            />
-            <Text style={[styles.editorialText, { color: theme.colors.textSecondary }]}>
-              The shopping experience balances immediate buying with preorder logic. This lets the
-              storefront feel premium for clients while remaining production-aware behind the scene.
-            </Text>
-          </Panel>
-
-          <Panel style={styles.editorialSide}>
-            <Text style={[styles.panelLabel, { color: theme.colors.textMuted }]}>CLIENT JOURNEY</Text>
-            <View style={styles.journeyList}>
-              {JOURNEY.map((item, index) => (
-                <View key={item} style={styles.journeyRow}>
-                  <Text style={[styles.journeyIndex, { color: theme.colors.textMuted }]}>
-                    0{index + 1}
-                  </Text>
-                  <Text style={[styles.journeyText, { color: theme.colors.textSecondary }]}>
+            <View style={styles.systemList}>
+              {SYSTEM_ROWS.map((item) => (
+                <View
+                  key={item}
+                  style={[styles.systemRow, { borderColor: theme.colors.borderSoft }]}
+                >
+                  <Text style={[styles.systemText, { color: theme.colors.textSecondary }]}>
                     {item}
                   </Text>
                 </View>
               ))}
             </View>
+          </View>
+
+          <Panel style={styles.heroVisual}>
+            <View style={[styles.heroGlow, { backgroundColor: theme.colors.glow }]} />
+            <Image source={referenceTechJacket} style={styles.heroImage} resizeMode="cover" />
+            <View style={styles.heroOverlayTop}>
+              <Text style={[styles.visualLabel, { color: theme.colors.textMuted }]}>
+                STORM SHELL / VISUAL REFERENCE
+              </Text>
+              <Text style={[styles.visualStats, { color: theme.colors.textPrimary }]}>XS - XL</Text>
+            </View>
+            <View style={styles.heroOverlayBottom}>
+              <Text style={[styles.visualHeadline, { color: theme.colors.textPrimary }]}>
+                AI TRY-ON / PRODUCT DETAIL / HIGH-END COMMERCE
+              </Text>
+            </View>
           </Panel>
+        </View>
+
+        <View style={styles.featureGrid}>
+          {FEATURE_ROWS.map(([title, copy]) => (
+            <Panel key={title} style={styles.featureCard}>
+              <Text style={[styles.featureTitle, { color: theme.colors.textPrimary }]}>{title}</Text>
+              <Text style={[styles.featureCopy, { color: theme.colors.textSecondary }]}>{copy}</Text>
+            </Panel>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -131,15 +124,34 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 36,
-    gap: 20,
+    paddingBottom: 44,
+    gap: 18,
   },
   topbar: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+  },
+  topbarLeft: {
+    gap: 4,
+  },
+  topbarRight: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
     alignItems: "center",
+  },
+  logo: {
+    fontFamily: "Oswald_500Medium",
+    fontSize: 28,
+    letterSpacing: 2.4,
+  },
+  topbarMeta: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.6,
   },
   hero: {
     flexDirection: "row",
@@ -147,104 +159,120 @@ const styles = StyleSheet.create({
     gap: 18,
     alignItems: "stretch",
   },
-  heroCopy: {
-    flex: 2,
-    minWidth: 300,
-    gap: 14,
-  },
-  heroPanel: {
-    flex: 1,
-    minWidth: 280,
+  heroLeft: {
+    flex: 1.05,
+    minWidth: 320,
     gap: 14,
     justifyContent: "space-between",
   },
-  brand: {
-    fontFamily: "Oswald_500Medium",
-    fontSize: 92,
-    letterSpacing: 4,
-  },
-  title: {
+  kicker: {
     fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 34,
-    lineHeight: 42,
-    letterSpacing: 1.3,
-    maxWidth: 760,
+    fontSize: 11,
+    letterSpacing: 1.8,
   },
-  copy: {
+  heroTitle: {
+    maxWidth: 680,
+    fontFamily: "Oswald_500Medium",
+    fontSize: 58,
+    lineHeight: 62,
+    letterSpacing: 0.6,
+  },
+  heroCopy: {
+    maxWidth: 620,
     fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 16,
-    lineHeight: 26,
-    maxWidth: 760,
+    fontSize: 15,
+    lineHeight: 25,
   },
-  ctaRow: {
+  heroActions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+    paddingTop: 6,
+  },
+  systemList: {
+    gap: 10,
     paddingTop: 10,
   },
-  panelLabel: {
+  systemRow: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+  },
+  systemText: {
+    fontFamily: "SpaceGrotesk_500Medium",
+    fontSize: 13,
+    letterSpacing: 0.9,
+  },
+  heroVisual: {
+    flex: 1,
+    minWidth: 340,
+    minHeight: 760,
+    justifyContent: "space-between",
+    padding: 0,
+  },
+  heroGlow: {
+    position: "absolute",
+    top: -80,
+    right: -60,
+    width: 440,
+    height: 440,
+    borderRadius: 999,
+    opacity: 0.82,
+  },
+  heroImage: {
+    position: "absolute",
+    right: -46,
+    bottom: 0,
+    width: 520,
+    height: 760,
+  },
+  heroOverlayTop: {
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  heroOverlayBottom: {
+    paddingHorizontal: 22,
+    paddingBottom: 22,
+    maxWidth: 340,
+  },
+  visualLabel: {
     fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 1.6,
   },
-  panelValue: {
+  visualStats: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 32,
-    lineHeight: 38,
-    letterSpacing: 1.2,
+    fontSize: 22,
+    letterSpacing: 1,
   },
-  panelText: {
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 15,
-    lineHeight: 24,
-  },
-  pillarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-  },
-  pillarCard: {
-    flexBasis: 280,
-    flexGrow: 1,
-    minHeight: 180,
-  },
-  editorialRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-  },
-  editorialMain: {
-    flex: 1.4,
-    minWidth: 320,
-    gap: 18,
-  },
-  editorialSide: {
-    flex: 1,
-    minWidth: 280,
-    gap: 16,
-  },
-  editorialText: {
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 15,
-    lineHeight: 24,
-  },
-  journeyList: {
-    gap: 12,
-  },
-  journeyRow: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  journeyIndex: {
-    width: 28,
-    fontFamily: "Oswald_500Medium",
-    fontSize: 20,
-  },
-  journeyText: {
-    flex: 1,
-    fontFamily: "SpaceGrotesk_400Regular",
+  visualHeadline: {
+    fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 14,
     lineHeight: 22,
+    letterSpacing: 0.7,
+  },
+  featureGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  featureCard: {
+    flexBasis: 280,
+    flexGrow: 1,
+    minHeight: 170,
+    gap: 14,
+  },
+  featureTitle: {
+    fontFamily: "Oswald_500Medium",
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: 0.8,
+  },
+  featureCopy: {
+    fontFamily: "SpaceGrotesk_400Regular",
+    fontSize: 14,
+    lineHeight: 23,
   },
 });

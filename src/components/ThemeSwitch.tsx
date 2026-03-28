@@ -20,7 +20,7 @@ export function ThemeSwitch({
       style={[
         styles.base,
         {
-          borderColor: theme.colors.border,
+          borderColor: theme.colors.borderSoft,
           backgroundColor: theme.colors.surface,
         },
       ]}
@@ -29,18 +29,18 @@ export function ThemeSwitch({
         const active = preference === option;
         return (
           <Pressable
-            key={option}
-            onPress={() => setThemePreference(option)}
-            style={[
-              styles.item,
-              active && { backgroundColor: theme.colors.textPrimary },
-            ]}
-          >
+              key={option}
+              onPress={() => setThemePreference(option)}
+              style={[
+                styles.item,
+                active && { backgroundColor: theme.colors.accent },
+              ]}
+            >
             <Text
               style={[
                 styles.label,
                 {
-                  color: active ? theme.colors.background : theme.colors.textSecondary,
+                  color: active ? theme.colors.accentContrast : theme.colors.textSecondary,
                 },
               ]}
             >
@@ -59,12 +59,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 4,
     gap: 4,
+    borderRadius: 999,
   },
   item: {
     minWidth: 74,
     paddingHorizontal: 12,
     paddingVertical: 10,
     alignItems: "center",
+    borderRadius: 999,
   },
   label: {
     fontFamily: "SpaceGrotesk_700Bold",

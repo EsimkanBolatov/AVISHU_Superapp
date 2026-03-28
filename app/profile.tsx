@@ -1,11 +1,13 @@
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { MonoButton } from "../src/components/MonoButton";
 import { OrderTracker } from "../src/components/OrderTracker";
 import { Panel } from "../src/components/Panel";
 import { ScreenShell } from "../src/components/ScreenShell";
 import { SectionHeading } from "../src/components/SectionHeading";
+import { StatusPill } from "../src/components/StatusPill";
+import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
 import { AppLanguage, Role, ThemePreference } from "../src/types";
@@ -41,33 +43,45 @@ export default function ProfileScreen() {
     <ScreenShell title="PROFILE" subtitle="SETTINGS / LOYALTY / TRACKING">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.identity}>
-          <Text style={[styles.name, { color: theme.colors.textPrimary }]}>
-            {user.name.toUpperCase()}
-          </Text>
-          <Text style={[styles.role, { color: theme.colors.textSecondary }]}>
-            ROLE / {user.role.toUpperCase()}
-          </Text>
-          <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary }]}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${user.loyaltyProgress}%`,
-                  backgroundColor: theme.colors.textPrimary,
-                },
-              ]}
-            />
+          <View style={styles.identityGrid}>
+            <View style={styles.identityCopy}>
+              <StatusPill label="CLIENT PROFILE / LIVE PREFERENCES" tone="solid" />
+              <Text style={[styles.name, { color: theme.colors.textPrimary }]}>
+                {user.name.toUpperCase()}
+              </Text>
+              <Text style={[styles.role, { color: theme.colors.textSecondary }]}>
+                ROLE / {user.role.toUpperCase()}
+              </Text>
+
+              <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${user.loyaltyProgress}%`,
+                      backgroundColor: theme.colors.accent,
+                    },
+                  ]}
+                />
+              </View>
+
+              <Text style={[styles.progressText, { color: theme.colors.textMuted }]}>
+                LOYALTY / {user.loyaltyProgress}% TO NEXT TIER
+              </Text>
+            </View>
+
+            <View style={[styles.identityVisual, { borderColor: theme.colors.borderSoft }]}>
+              <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
+              <Image source={referenceTechJacket} style={styles.visualImage} resizeMode="cover" />
+            </View>
           </View>
-          <Text style={[styles.progressText, { color: theme.colors.textMuted }]}>
-            LOYALTY / {user.loyaltyProgress}% TO NEXT TIER
-          </Text>
         </Panel>
 
         <View style={styles.grid}>
           <Panel style={styles.settingsPanel}>
             <SectionHeading
               title="THEME"
-              subtitle="Системная, светлая или темная версия."
+              subtitle="System, light or dark mode with manual switching."
               compact
             />
             <View style={styles.optionRow}>
@@ -85,7 +99,7 @@ export default function ProfileScreen() {
           <Panel style={styles.settingsPanel}>
             <SectionHeading
               title="LANGUAGE"
-              subtitle="RU / KK / EN локализация интерфейса."
+              subtitle="RU / KK / EN preference, ready for future localization."
               compact
             />
             <View style={styles.optionRow}>
@@ -104,7 +118,7 @@ export default function ProfileScreen() {
         <Panel>
           <SectionHeading
             title="DEMO ROLE SWITCH"
-            subtitle="Быстрая проверка всех трех сценариев в одном клиенте."
+            subtitle="Fast validation of all three role scenarios from one local build."
             compact
           />
           <View style={styles.optionRow}>
@@ -123,7 +137,7 @@ export default function ProfileScreen() {
           <Panel>
             <SectionHeading
               title="ORDER TRACKER"
-              subtitle="Прогресс клиента обновляется от действий франчайзи и цеха."
+              subtitle="Client progress updates from franchisee and atelier actions in real time."
               compact
             />
             <OrderTracker order={activeOrder} />
@@ -131,7 +145,7 @@ export default function ProfileScreen() {
         ) : null}
 
         <MonoButton
-          label="ВЫЙТИ"
+          label="SIGN OUT"
           variant="secondary"
           onPress={() => {
             logout();
@@ -160,8 +174,8 @@ function Chip({
       style={[
         styles.chip,
         {
-          borderColor: theme.colors.border,
-          backgroundColor: active ? theme.colors.textPrimary : theme.colors.surfaceSecondary,
+          borderColor: theme.colors.borderSoft,
+          backgroundColor: active ? theme.colors.accent : theme.colors.surfaceSecondary,
         },
       ]}
     >
@@ -169,7 +183,7 @@ function Chip({
         style={[
           styles.chipText,
           {
-            color: active ? theme.colors.background : theme.colors.textSecondary,
+            color: active ? theme.colors.accentContrast : theme.colors.textSecondary,
           },
         ]}
       >
@@ -187,6 +201,17 @@ const styles = StyleSheet.create({
   identity: {
     gap: 14,
   },
+  identityGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 18,
+    alignItems: "stretch",
+  },
+  identityCopy: {
+    flex: 1,
+    minWidth: 280,
+    gap: 14,
+  },
   name: {
     fontFamily: "Oswald_500Medium",
     fontSize: 44,
@@ -199,6 +224,8 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 10,
+    borderRadius: 999,
+    overflow: "hidden",
   },
   progressFill: {
     height: "100%",
@@ -207,6 +234,30 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_500Medium",
     fontSize: 12,
     letterSpacing: 1.2,
+  },
+  identityVisual: {
+    flex: 0.9,
+    minWidth: 280,
+    minHeight: 360,
+    borderWidth: 1,
+    borderRadius: 26,
+    overflow: "hidden",
+  },
+  visualGlow: {
+    position: "absolute",
+    top: -40,
+    right: -30,
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    opacity: 0.9,
+  },
+  visualImage: {
+    position: "absolute",
+    right: -30,
+    bottom: -20,
+    width: 330,
+    height: 400,
   },
   grid: {
     flexDirection: "row",
@@ -225,6 +276,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1,
+    borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },

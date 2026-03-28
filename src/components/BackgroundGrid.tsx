@@ -7,6 +7,15 @@ export function BackgroundGrid() {
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <View
+        style={[
+          styles.glow,
+          {
+            backgroundColor: theme.colors.glow,
+            opacity: theme.mode === "dark" ? 0.22 : 0.9,
+          },
+        ]}
+      />
       {Array.from({ length: 5 }).map((_, index) => (
         <View
           key={`vertical-${index}`}
@@ -14,7 +23,7 @@ export function BackgroundGrid() {
             styles.vertical,
             {
               left: `${10 + index * 22}%`,
-              backgroundColor: theme.mode === "dark" ? "#111111" : "#D9D3CB",
+              backgroundColor: theme.colors.borderSoft,
             },
           ]}
         />
@@ -26,7 +35,7 @@ export function BackgroundGrid() {
             styles.horizontal,
             {
               top: `${14 + index * 20}%`,
-              backgroundColor: theme.mode === "dark" ? "#111111" : "#D9D3CB",
+              backgroundColor: theme.colors.borderSoft,
             },
           ]}
         />
@@ -47,5 +56,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
+  },
+  glow: {
+    position: "absolute",
+    top: -120,
+    right: -80,
+    width: 520,
+    height: 520,
+    borderRadius: 999,
   },
 });

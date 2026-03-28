@@ -40,18 +40,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 32,
-    lineHeight: 36,
-    letterSpacing: 1.4,
+    fontSize: 34,
+    lineHeight: 38,
+    letterSpacing: 1,
   },
   titleCompact: {
-    fontSize: 24,
-    lineHeight: 28,
+    fontSize: 25,
+    lineHeight: 29,
   },
   subtitle: {
     fontFamily: "SpaceGrotesk_400Regular",
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   subtitleCompact: {
     fontSize: 13,

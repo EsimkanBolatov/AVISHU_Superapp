@@ -35,8 +35,8 @@ export default function ProductionScreen() {
             LARGE CONTROLS. LOW TEXT. HIGH CONTRAST.
           </Text>
           <Text style={[styles.leadCopy, { color: theme.colors.textSecondary }]}>
-            Экран оптимизирован под работу мастера: крупные карточки, минимум отвлекающих деталей
-            и одно целевое действие для закрытия этапа пошива.
+            This screen is optimized for the atelier operator: oversized cards, reduced visual
+            noise and one clear action to complete the production stage.
           </Text>
         </Panel>
 
@@ -46,14 +46,14 @@ export default function ProductionScreen() {
               <SectionHeading title={order.productName.toUpperCase()} subtitle={order.number} compact />
               <View style={styles.taskMeta}>
                 <Text style={[styles.taskText, { color: theme.colors.textSecondary }]}>
-                  КЛИЕНТ / {order.customerName}
+                  CLIENT / {order.customerName}
                 </Text>
                 <Text style={[styles.taskText, { color: theme.colors.textSecondary }]}>
-                  НОТЫ / {order.notes}
+                  NOTES / {order.notes}
                 </Text>
               </View>
               <MonoButton
-                label="ЗАВЕРШИТЬ ЭТАП"
+                label="COMPLETE STAGE"
                 size="large"
                 onPress={() => updateOrderStatus(order.id, "ready")}
               />
