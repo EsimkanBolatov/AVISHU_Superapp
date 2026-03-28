@@ -28,6 +28,130 @@ type ProductSeed = {
   sizes: SizeSeed[];
 };
 
+const categoryConfig: Record<
+  string,
+  {
+    brandName: string;
+    collectionName: string;
+    dropName: string;
+    seasonLabel: string;
+    colors: string[];
+    materials: string[];
+    fitProfile: string;
+    careInstructions: string;
+    sizeGuide: string;
+  }
+> = {
+  "c-outerwear": {
+    brandName: "AVISHU Atelier",
+    collectionName: "Storm Capsule",
+    dropName: "Drop 01",
+    seasonLabel: "FW26",
+    colors: ["Graphite", "Bone White", "Obsidian"],
+    materials: ["Laminated nylon", "Bonded membrane", "Storm shell"],
+    fitProfile: "Protective oversized shell",
+    careInstructions: "Spot clean, cold machine wash on technical cycle, no tumble dry.",
+    sizeGuide: "Choose your regular size for architectural volume. Size down for cleaner tailoring.",
+  },
+  "c-tailoring": {
+    brandName: "AVISHU Tailor Lab",
+    collectionName: "Line Architecture",
+    dropName: "Drop 02",
+    seasonLabel: "SS26",
+    colors: ["Anthracite", "Midnight Navy", "Stone"],
+    materials: ["Virgin wool", "Cupro", "Viscose suiting"],
+    fitProfile: "Structured tailored profile",
+    careInstructions: "Dry clean only. Steam lightly and store on wide shoulder hanger.",
+    sizeGuide: "Take your regular tailoring size. If between sizes, size up for softer drape.",
+  },
+  "c-softwear": {
+    brandName: "AVISHU Core",
+    collectionName: "Layer System",
+    dropName: "Drop 03",
+    seasonLabel: "SS26",
+    colors: ["Ink", "Cloud", "Taupe"],
+    materials: ["Heavy jersey", "Brushed cotton", "Stretch viscose"],
+    fitProfile: "Relaxed premium layering",
+    careInstructions: "Cold wash with similar colors. Dry flat to preserve body structure.",
+    sizeGuide: "Designed to layer. Stay true to size for relaxed fit.",
+  },
+  "c-knitwear": {
+    brandName: "AVISHU Studio",
+    collectionName: "Quiet Winter",
+    dropName: "Drop 04",
+    seasonLabel: "FW26",
+    colors: ["Ash", "Black", "Milk"],
+    materials: ["Merino", "Cashmere", "Silk blend"],
+    fitProfile: "Close to body luxury knit",
+    careInstructions: "Hand wash cold or dry clean. Dry flat and avoid direct heat.",
+    sizeGuide: "Fits close on shoulders with gentle ease in body. Stay true to size.",
+  },
+  "c-bottoms": {
+    brandName: "AVISHU Motion",
+    collectionName: "Volume Program",
+    dropName: "Drop 05",
+    seasonLabel: "FW26",
+    colors: ["Black", "Graphite", "Sand"],
+    materials: ["Technical cotton", "Wool suiting", "Dense jersey"],
+    fitProfile: "Controlled volume lower body",
+    careInstructions: "Cold wash or dry clean depending on fabrication. Hang dry only.",
+    sizeGuide: "Choose your usual waist. Volume is built into the silhouette.",
+  },
+  "c-essentials": {
+    brandName: "AVISHU Essentials",
+    collectionName: "Core Uniform",
+    dropName: "Drop 06",
+    seasonLabel: "SS26",
+    colors: ["White", "Black", "Heather Grey"],
+    materials: ["Compact cotton", "Stretch jersey", "Lyocell poplin"],
+    fitProfile: "Clean everyday base",
+    careInstructions: "Cold wash, reshape while damp, no aggressive tumble dry.",
+    sizeGuide: "Slim to regular depending on item. Stay true to size for intended base-layer fit.",
+  },
+};
+
+function buildEditorialStory(product: ProductSeed, index: number) {
+  return `${product.name} sits inside ${categoryConfig[product.categoryId].collectionName} as a premium ${
+    product.availability === "preorder" ? "limited request piece" : "ready-position"
+  } with stronger product storytelling for AVISHU season ${categoryConfig[product.categoryId].seasonLabel}. Editorial focus ${index + 1} builds on ${product.subtitle.toLowerCase()}.`;
+}
+
+function enrichProducts() {
+  return products.map((product, index, list) => {
+    const config = categoryConfig[product.categoryId];
+    const relatedProductIds = list
+      .filter((candidate) => candidate.categoryId === product.categoryId && candidate.id !== product.id)
+      .slice(0, 2)
+      .map((candidate) => candidate.id);
+    const crossSellProductIds = list
+      .filter((candidate) => candidate.categoryId !== product.categoryId)
+      .slice(index % 3, index % 3 + 2)
+      .map((candidate) => candidate.id);
+
+    return {
+      ...product,
+      brandName: config.brandName,
+      collectionName: config.collectionName,
+      dropName: config.dropName,
+      seasonLabel: config.seasonLabel,
+      limitedEdition: index % 4 === 0 || product.availability === "preorder",
+      limitedQuantity: index % 4 === 0 ? 24 + index : null,
+      colors: config.colors.slice(0, 2 + (index % 2)),
+      materials: config.materials.slice(0, 2),
+      fitProfile: config.fitProfile,
+      careInstructions: config.careInstructions,
+      sizeGuide: config.sizeGuide,
+      editorialStory: buildEditorialStory(product, index),
+      relatedProductIds,
+      crossSellProductIds,
+    };
+  });
+}
+
+function addHours(date: Date, amount: number) {
+  return new Date(date.getTime() + amount * 60 * 60 * 1000);
+}
+
 function hashPassword(password: string) {
   return createHash("sha256").update(password).digest("hex");
 }
@@ -560,9 +684,21 @@ const products: ProductSeed[] = [
 ];
 
 async function main() {
+  const enrichedProducts = enrichProducts();
+
+  await prisma.notification.deleteMany();
+  await prisma.orderTag.deleteMany();
+  await prisma.orderAuditLog.deleteMany();
   await prisma.orderAttachment.deleteMany();
   await prisma.orderComment.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.contentEntry.deleteMany();
+  await prisma.recommendation.deleteMany();
+  await prisma.reward.deleteMany();
+  await prisma.savedPaymentCard.deleteMany();
+  await prisma.savedAddress.deleteMany();
+  await prisma.productView.deleteMany();
+  await prisma.productFavorite.deleteMany();
   await prisma.tryOnSession.deleteMany();
   await prisma.productVariant.deleteMany();
   await prisma.productMedia.deleteMany();
@@ -586,6 +722,9 @@ async function main() {
         paymentCardHolder: "Aigerim K.",
         avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
         loyaltyProgress: 72,
+        loyaltyPoints: 1840,
+        loyaltyTier: "gold",
+        segment: "vip_repeat",
       },
       {
         id: "u-admin-001",
@@ -596,6 +735,9 @@ async function main() {
         phone: "+7 701 900 44 11",
         avatarUrl: "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=400&q=80",
         loyaltyProgress: 100,
+        loyaltyPoints: 0,
+        loyaltyTier: "black",
+        segment: "staff_admin",
       },
       {
         id: "u-franchisee-001",
@@ -606,6 +748,9 @@ async function main() {
         phone: "+7 777 100 88 40",
         avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80",
         loyaltyProgress: 100,
+        loyaltyPoints: 0,
+        loyaltyTier: "black",
+        segment: "staff_franchisee",
       },
       {
         id: "u-production-001",
@@ -616,18 +761,37 @@ async function main() {
         phone: "+7 701 320 19 90",
         avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
         loyaltyProgress: 100,
+        loyaltyPoints: 0,
+        loyaltyTier: "black",
+        segment: "staff_production",
+      },
+      {
+        id: "u-support-001",
+        email: "support@avishu.kz",
+        passwordHash: hashPassword("Support123!"),
+        name: "Dana R.",
+        role: "support",
+        phone: "+7 707 222 11 44",
+        avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
+        loyaltyProgress: 100,
+        loyaltyPoints: 0,
+        loyaltyTier: "black",
+        segment: "staff_support",
       },
     ],
   });
 
   await prisma.category.createMany({ data: categories });
   await prisma.product.createMany({
-    data: products.map(({ media, sizes, ...product }) => product),
+    data: enrichedProducts.map(({ media, sizes, ...product }) => product),
   });
 
-  const productMediaRows = products.flatMap((product) =>
+  const productMediaRows = enrichedProducts.flatMap((product) =>
     product.media.map((url, index) => {
-      const mediaKind = (index === 0 ? "cover" : "gallery") as "cover" | "gallery";
+      const mediaKind = (index === 0 ? "cover" : index === 1 ? "detail" : "gallery") as
+        | "cover"
+        | "detail"
+        | "gallery";
 
       return {
         id: `pm-${product.id.replace("p-", "")}-${index + 1}`,
@@ -640,11 +804,12 @@ async function main() {
     })
   );
 
-  const productVariantRows = products.flatMap((product, productIndex) =>
+  const productVariantRows = enrichedProducts.flatMap((product, productIndex) =>
     product.sizes.map((variant, variantIndex) => ({
       id: `pv-${String(productIndex * 10 + variantIndex + 1).padStart(3, "0")}`,
       productId: product.id,
       sizeLabel: variant.sizeLabel,
+      colorLabel: product.colors[variantIndex % product.colors.length],
       stock: variant.stock,
     })),
   );
@@ -655,6 +820,50 @@ async function main() {
 
   await prisma.productMedia.createMany({ data: productMediaRows });
   await prisma.productVariant.createMany({ data: productVariantRows });
+
+  await prisma.savedAddress.createMany({
+    data: [
+      {
+        id: "addr-001",
+        userId: "u-client-001",
+        label: "Home",
+        city: "Almaty",
+        line1: "Al-Farabi avenue 19, apt 120",
+        line2: "Tower A",
+        isDefault: true,
+      },
+      {
+        id: "addr-002",
+        userId: "u-client-001",
+        label: "Office",
+        city: "Almaty",
+        line1: "Nazarbayev avenue 120",
+        line2: "7th floor reception",
+        isDefault: false,
+      },
+    ],
+  });
+
+  await prisma.savedPaymentCard.createMany({
+    data: [
+      {
+        id: "card-001",
+        userId: "u-client-001",
+        brand: "VISA",
+        holderName: "Aigerim K.",
+        last4: "4472",
+        isDefault: true,
+      },
+      {
+        id: "card-002",
+        userId: "u-client-001",
+        brand: "KASPI",
+        holderName: "Aigerim K.",
+        last4: "9812",
+        isDefault: false,
+      },
+    ],
+  });
 
   await prisma.tryOnSession.createMany({
     data: [
@@ -676,6 +885,15 @@ async function main() {
         status: "ready",
         notes: "Merino knit preview saved for winter capsule checkout.",
       },
+      {
+        id: "to-003",
+        userId: "u-client-001",
+        productId: "p-017",
+        sourceImageUrl: imagePools.bottoms[1],
+        resultImageUrl: imagePools.bottoms[0],
+        status: "ready",
+        notes: "Cargo trouser silhouette approved after second pass.",
+      },
     ],
   });
 
@@ -692,9 +910,13 @@ async function main() {
         paymentStatus: "paid",
         deliveryMethod: "courier",
         paymentMethod: "kaspi",
+        priority: "vip",
         notes: "Priority client. Confirm monochrome packaging.",
         shippingAddress: "Almaty, Al-Farabi avenue 19, apt 120",
         contactPhone: "+7 777 555 21 10",
+        dueAt: addHours(new Date("2026-03-27T12:30:00.000Z"), 36),
+        slaHours: 36,
+        qcChecklist: "Shell sealed; seam tape review pending.",
         totalAmount: 219000,
         createdAt: new Date("2026-03-27T12:30:00.000Z"),
       },
@@ -708,10 +930,13 @@ async function main() {
         paymentStatus: "paid",
         deliveryMethod: "pickup",
         paymentMethod: "card",
+        priority: "standard",
         notes: "Preorder client requested SMS once atelier confirms slot.",
         shippingAddress: "Almaty flagship pickup point",
         contactPhone: "+7 777 555 21 10",
         scheduledDate: new Date("2026-04-05T00:00:00.000Z"),
+        dueAt: addHours(new Date("2026-03-27T13:00:00.000Z"), 72),
+        slaHours: 72,
         totalAmount: 259000,
         createdAt: new Date("2026-03-27T13:00:00.000Z"),
       },
@@ -726,11 +951,34 @@ async function main() {
         paymentStatus: "paid",
         deliveryMethod: "courier",
         paymentMethod: "transfer",
+        priority: "high",
         notes: "Gift wrap the knitwear order and include atelier care card.",
         shippingAddress: "Almaty, Al-Farabi avenue 19, apt 120",
         contactPhone: "+7 777 555 21 10",
+        dueAt: addHours(new Date("2026-03-28T09:20:00.000Z"), 24),
+        slaHours: 24,
+        qcChecklist: "Final hand finish approved.",
         totalAmount: 109000,
         createdAt: new Date("2026-03-28T09:20:00.000Z"),
+      },
+      {
+        id: "o-004",
+        number: "AV-260326-004",
+        productId: "p-021",
+        variantId: variantLookup.get("p-021:M")!,
+        customerId: "u-client-001",
+        status: "delivered",
+        paymentStatus: "paid",
+        deliveryMethod: "courier",
+        paymentMethod: "card",
+        priority: "standard",
+        notes: "Delivered successfully. Candidate for repeat purchase flow.",
+        shippingAddress: "Almaty, Al-Farabi avenue 19, apt 120",
+        contactPhone: "+7 777 555 21 10",
+        dueAt: addHours(new Date("2026-03-26T08:00:00.000Z"), 24),
+        slaHours: 24,
+        totalAmount: 52000,
+        createdAt: new Date("2026-03-26T08:00:00.000Z"),
       },
     ],
   });
@@ -761,6 +1009,12 @@ async function main() {
         authorId: "u-production-001",
         message: "Knitwear QC cleared. Ready for dispatch.",
       },
+      {
+        id: "oc-005",
+        orderId: "o-004",
+        authorId: "u-support-001",
+        message: "Client received courier handoff and rated service highly.",
+      },
     ],
   });
 
@@ -779,6 +1033,255 @@ async function main() {
         authorId: "u-franchisee-001",
         label: "Care Card",
         url: "https://example.com/files/avishu-care-card.pdf",
+      },
+      {
+        id: "oa-003",
+        orderId: "o-001",
+        authorId: "u-production-001",
+        label: "Construction Note",
+        url: "https://example.com/files/avishu-construction-note.pdf",
+      },
+    ],
+  });
+
+  await prisma.orderAuditLog.createMany({
+    data: [
+      {
+        id: "audit-001",
+        orderId: "o-001",
+        actorId: "u-client-001",
+        actorName: "Aigerim K.",
+        actorRole: "client",
+        action: "order_created",
+        message: "Client created the order from premium catalog checkout.",
+      },
+      {
+        id: "audit-002",
+        orderId: "o-001",
+        actorId: "u-franchisee-001",
+        actorName: "Madina S.",
+        actorRole: "franchisee",
+        action: "status_changed",
+        message: "franchisee moved the order from pending_franchisee to in_production.",
+      },
+      {
+        id: "audit-003",
+        orderId: "o-003",
+        actorId: "u-production-001",
+        actorName: "Gulmira T.",
+        actorRole: "production",
+        action: "status_changed",
+        message: "production moved the order from quality_check to ready.",
+      },
+      {
+        id: "audit-004",
+        orderId: "o-004",
+        actorId: "u-support-001",
+        actorName: "Dana R.",
+        actorRole: "support",
+        action: "status_changed",
+        message: "support moved the order from ready to delivered.",
+      },
+    ],
+  });
+
+  await prisma.orderTag.createMany({
+    data: [
+      { id: "tag-001", orderId: "o-001", label: "vip" },
+      { id: "tag-002", orderId: "o-001", label: "qc-watch" },
+      { id: "tag-003", orderId: "o-002", label: "preorder" },
+      { id: "tag-004", orderId: "o-003", label: "gift-wrap" },
+      { id: "tag-005", orderId: "o-004", label: "repeat-order" },
+    ],
+  });
+
+  await prisma.productFavorite.createMany({
+    data: [
+      { id: "fav-001", userId: "u-client-001", productId: "p-001" },
+      { id: "fav-002", userId: "u-client-001", productId: "p-013" },
+      { id: "fav-003", userId: "u-client-001", productId: "p-021" },
+    ],
+  });
+
+  await prisma.productView.createMany({
+    data: [
+      { id: "view-001", userId: "u-client-001", productId: "p-001", createdAt: new Date("2026-03-27T10:00:00.000Z") },
+      { id: "view-002", userId: "u-client-001", productId: "p-017", createdAt: new Date("2026-03-27T10:15:00.000Z") },
+      { id: "view-003", userId: "u-client-001", productId: "p-013", createdAt: new Date("2026-03-27T11:00:00.000Z") },
+      { id: "view-004", userId: "u-client-001", productId: "p-021", createdAt: new Date("2026-03-28T08:10:00.000Z") },
+      { id: "view-005", userId: "u-client-001", productId: "p-005", createdAt: new Date("2026-03-28T08:18:00.000Z") },
+    ],
+  });
+
+  await prisma.reward.createMany({
+    data: [
+      {
+        id: "reward-001",
+        title: "Private fitting appointment",
+        description: "Redeem for a one-on-one showroom styling session.",
+        pointsRequired: 1200,
+        tier: "gold",
+      },
+      {
+        id: "reward-002",
+        title: "Priority atelier slot",
+        description: "Reserve a faster production and QC window.",
+        pointsRequired: 2200,
+        tier: "black",
+      },
+      {
+        id: "reward-003",
+        title: "Editorial gift packaging",
+        description: "Premium packaging and handwritten note.",
+        pointsRequired: 700,
+        tier: "silver",
+      },
+    ],
+  });
+
+  await prisma.recommendation.createMany({
+    data: [
+      {
+        id: "rec-001",
+        userId: "u-client-001",
+        productId: "p-017",
+        label: "Complete the look",
+        reason: "Pairs with your saved Storm Capsule outerwear.",
+      },
+      {
+        id: "rec-002",
+        userId: "u-client-001",
+        productId: "p-013",
+        label: "Client repeat signal",
+        reason: "You engaged with merino knitwear twice this week.",
+      },
+      {
+        id: "rec-003",
+        userId: "u-client-001",
+        productId: "p-021",
+        label: "Abandoned cart recovery",
+        reason: "You viewed this essential multiple times without checkout.",
+      },
+    ],
+  });
+
+  await prisma.notification.createMany({
+    data: [
+      {
+        id: "note-001",
+        userId: "u-client-001",
+        orderId: "o-001",
+        type: "order_status",
+        title: "Order entered production",
+        body: "AV-260327-001 is now in the atelier queue.",
+      },
+      {
+        id: "note-002",
+        userId: "u-client-001",
+        orderId: "o-003",
+        type: "order_status",
+        title: "Order ready for dispatch",
+        body: "AV-260328-003 passed QC and is ready.",
+      },
+      {
+        id: "note-003",
+        roleTarget: "franchisee",
+        orderId: "o-002",
+        type: "staff_action",
+        title: "New preorder intake",
+        body: "AV-260327-002 requires franchisee routing.",
+      },
+      {
+        id: "note-004",
+        roleTarget: "support",
+        orderId: "o-003",
+        type: "staff_action",
+        title: "Client handoff pending",
+        body: "Coordinate dispatch communication for AV-260328-003.",
+      },
+      {
+        id: "note-005",
+        userId: "u-client-001",
+        type: "reward",
+        title: "Gold tier reward unlocked",
+        body: "You can now redeem a private fitting appointment.",
+      },
+    ],
+  });
+
+  await prisma.contentEntry.createMany({
+    data: [
+      {
+        id: "content-ru-journal",
+        kind: "journal",
+        slug: "quiet-future-outerwear",
+        locale: "ru",
+        title: "Тихая архитектура premium outerwear",
+        summary: "Как AVISHU строит холодный digital-бутік вокруг product story и fit-tech.",
+        body: "AVISHU рассматривает outerwear как систему: предмет, контекст, операция и повторная покупка. Журнал раскрывает, почему quiet premium требует дисциплины в материале, посадке и сервисе.",
+        coverUrl: imagePools.outerwear[0],
+        eyebrow: "Journal / Brand narrative",
+        featured: true,
+      },
+      {
+        id: "content-en-journal",
+        kind: "journal",
+        slug: "quiet-future-outerwear",
+        locale: "en",
+        title: "Quiet architecture for future outerwear",
+        summary: "How AVISHU frames premium outerwear around product story, fit tech and retention.",
+        body: "AVISHU treats outerwear as a connected system: product, context, service and repeat purchase. The journal layer explains why quiet premium depends on discipline across fabric, fit and operations.",
+        coverUrl: imagePools.outerwear[1],
+        eyebrow: "Journal / Brand narrative",
+        featured: true,
+      },
+      {
+        id: "content-kk-journal",
+        kind: "journal",
+        slug: "quiet-future-outerwear",
+        locale: "kk",
+        title: "Болашақ outerwear үшін тыныш архитектура",
+        summary: "AVISHU product story, fit tech және retention негізінде premium outerwear құрады.",
+        body: "AVISHU outerwear-ді байланысқан жүйе ретінде қарастырады: өнім, контекст, сервис және repeat purchase. Журнал қабаты quiet premium үшін материал, fit және операциялық тәртіп неге маңызды екенін ашады.",
+        coverUrl: imagePools.outerwear[2],
+        eyebrow: "Journal / Brand narrative",
+        featured: true,
+      },
+      {
+        id: "content-ru-lookbook",
+        kind: "lookbook",
+        slug: "storm-capsule-01",
+        locale: "ru",
+        title: "Storm Capsule / Lookbook 01",
+        summary: "Подборка внешних слоев, мягких базовых слоев и knitwear для цельного city wardrobe.",
+        body: "Lookbook собирает outerwear, knitwear и bottoms в готовые premium-образы и связывает их с live operations и loyalty rewards.",
+        coverUrl: imagePools.bottoms[0],
+        eyebrow: "Lookbook / Season 01",
+        featured: true,
+      },
+      {
+        id: "content-en-campaign",
+        kind: "campaign",
+        slug: "drop-01-live-atelier",
+        locale: "en",
+        title: "Drop 01 / Live atelier loop",
+        summary: "Campaign layer for the launch of a trilingual premium commerce system.",
+        body: "This campaign connects storefront, try-on, order workflow and client support into one visible premium journey.",
+        coverUrl: imagePools.tailoring[0],
+        eyebrow: "Campaign / Live launch",
+        featured: false,
+      },
+      {
+        id: "content-ru-collection",
+        kind: "collection_story",
+        slug: "line-architecture",
+        locale: "ru",
+        title: "Line Architecture / История коллекции",
+        summary: "Тейлоринг как строгий контрапункт техническим оболочкам и мягкому layering.",
+        body: "Коллекция Line Architecture собирает тейлоринг, essentials и knitwear в более зрелый premium-ритм. История коллекции помогает продавать не только вещь, но и систему образа.",
+        coverUrl: imagePools.tailoring[2],
+        eyebrow: "Collection story / Tailoring",
+        featured: false,
       },
     ],
   });

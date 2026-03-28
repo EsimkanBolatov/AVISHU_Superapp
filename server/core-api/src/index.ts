@@ -3,21 +3,41 @@ import "dotenv/config";
 import { createHash, randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 
-import { MediaKind, Prisma, Role as PrismaRole } from "@prisma/client";
+import {
+  ContentKind,
+  LoyaltyTier,
+  MediaKind,
+  NotificationType,
+  Prisma,
+  PriorityLevel,
+  Role as PrismaRole,
+} from "@prisma/client";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { Server } from "socket.io";
 
 import { prisma } from "./prisma.js";
 import {
+  AppLanguage,
+  BootstrapPayload,
   Category,
+  ContentEntry as ContentEntryVm,
+  DashboardMetrics,
   DeliveryMethod,
+  Favorite,
+  FunnelMetrics,
+  Notification,
   Order,
   OrderStatus,
-  PaymentMethod,
+  PriorityLevel as PriorityLevelVm,
   Product,
   ProductAvailability,
+  ProductView,
+  Recommendation,
+  Reward,
   Role,
+  SavedAddress,
+  SavedPaymentCard,
   TryOnSession,
   User,
 } from "./types.js";
@@ -37,13 +57,29 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", async (_request, response) => {
-  const [users, products, orders] = await Promise.all([
+  const [users, products, orders, contentEntries] = await Promise.all([
     prisma.user.count(),
     prisma.product.count(),
     prisma.order.count(),
+    prisma.contentEntry.count(),
   ]);
 
-  response.json({ ok: true, users, products, orders });
+  response.json({ ok: true, users, products, orders, contentEntries });
+});
+
+app.get("/api/core/v1/content", async (request, response) => {
+  const locale = normalizeLocale(String(request.query.locale ?? "ru"));
+  const kind = String(request.query.kind ?? "").trim();
+
+  const rows = await prisma.contentEntry.findMany({
+    where: {
+      locale,
+      ...(kind ? { kind: kind as ContentKind } : {}),
+    },
+    orderBy: [{ featured: "desc" }, { publishedAt: "desc" }],
+  });
+
+  response.json({ contentEntries: rows.map(serializeContentEntry) });
 });
 
 app.post("/api/core/v1/auth/register", async (request, response) => {
@@ -72,7 +108,10 @@ app.post("/api/core/v1/auth/register", async (request, response) => {
       email,
       passwordHash: hashPassword(password),
       role: "client",
-      loyaltyProgress: 0,
+      loyaltyProgress: 8,
+      loyaltyPoints: 120,
+      loyaltyTier: "silver",
+      segment: "new_client",
     },
   });
 
@@ -106,6 +145,14 @@ app.get("/api/core/v1/auth/session", authMiddleware, async (request, response) =
   response.json({ user: request.user });
 });
 
+app.post("/api/core/v1/auth/logout", authMiddleware, async (request, response) => {
+  await prisma.session.deleteMany({
+    where: { token: request.token },
+  });
+
+  response.status(204).send();
+});
+
 app.patch("/api/core/v1/profile", authMiddleware, async (request, response) => {
   const name = String(request.body?.name ?? request.user.name).trim();
   const phone = String(request.body?.phone ?? request.user.phone ?? "").trim();
@@ -137,16 +184,290 @@ app.patch("/api/core/v1/profile", authMiddleware, async (request, response) => {
   response.json({ user: serializeUser(updatedUser) });
 });
 
-app.post("/api/core/v1/auth/logout", authMiddleware, async (request, response) => {
-  await prisma.session.deleteMany({
-    where: { token: request.token },
+app.post("/api/core/v1/profile/addresses", authMiddleware, async (request, response) => {
+  const payload = parseAddressPayload(request.body);
+
+  if (!payload.label || !payload.city || !payload.line1) {
+    response.status(400).json({ message: "Address payload is incomplete." });
+    return;
+  }
+
+  if (payload.isDefault) {
+    await prisma.savedAddress.updateMany({
+      where: { userId: request.user.id },
+      data: { isDefault: false },
+    });
+  }
+
+  const address = await prisma.savedAddress.create({
+    data: {
+      id: `addr-${randomUUID()}`,
+      userId: request.user.id,
+      ...payload,
+    },
   });
 
+  await syncUserDefaults(request.user.id);
+  response.status(201).json({
+    address: serializeSavedAddress(address),
+    user: await getSerializedUser(request.user.id),
+  });
+});
+
+app.patch("/api/core/v1/profile/addresses/:id", authMiddleware, async (request, response) => {
+  const addressId = getRouteId(request.params.id);
+  const existing = await prisma.savedAddress.findFirst({
+    where: {
+      id: addressId,
+      userId: request.user.id,
+    },
+  });
+
+  if (!existing) {
+    response.status(404).json({ message: "Address not found." });
+    return;
+  }
+
+  const payload = parseAddressPayload(request.body);
+
+  if (payload.isDefault) {
+    await prisma.savedAddress.updateMany({
+      where: { userId: request.user.id },
+      data: { isDefault: false },
+    });
+  }
+
+  const address = await prisma.savedAddress.update({
+    where: { id: addressId },
+    data: payload,
+  });
+
+  await syncUserDefaults(request.user.id);
+  response.json({
+    address: serializeSavedAddress(address),
+    user: await getSerializedUser(request.user.id),
+  });
+});
+
+app.delete("/api/core/v1/profile/addresses/:id", authMiddleware, async (request, response) => {
+  const addressId = getRouteId(request.params.id);
+  const existing = await prisma.savedAddress.findFirst({
+    where: {
+      id: addressId,
+      userId: request.user.id,
+    },
+  });
+
+  if (!existing) {
+    response.status(404).json({ message: "Address not found." });
+    return;
+  }
+
+  await prisma.savedAddress.delete({
+    where: { id: addressId },
+  });
+
+  await ensureAddressDefault(request.user.id);
+  await syncUserDefaults(request.user.id);
+  response.status(204).send();
+});
+
+app.post("/api/core/v1/profile/cards", authMiddleware, async (request, response) => {
+  const payload = parseCardPayload(request.body);
+
+  if (!payload.brand || !payload.holderName || payload.last4.length !== 4) {
+    response.status(400).json({ message: "Card payload is incomplete." });
+    return;
+  }
+
+  if (payload.isDefault) {
+    await prisma.savedPaymentCard.updateMany({
+      where: { userId: request.user.id },
+      data: { isDefault: false },
+    });
+  }
+
+  const card = await prisma.savedPaymentCard.create({
+    data: {
+      id: `card-${randomUUID()}`,
+      userId: request.user.id,
+      ...payload,
+    },
+  });
+
+  await syncUserDefaults(request.user.id);
+  response.status(201).json({
+    card: serializeSavedCard(card),
+    user: await getSerializedUser(request.user.id),
+  });
+});
+
+app.patch("/api/core/v1/profile/cards/:id", authMiddleware, async (request, response) => {
+  const cardId = getRouteId(request.params.id);
+  const existing = await prisma.savedPaymentCard.findFirst({
+    where: {
+      id: cardId,
+      userId: request.user.id,
+    },
+  });
+
+  if (!existing) {
+    response.status(404).json({ message: "Card not found." });
+    return;
+  }
+
+  const payload = parseCardPayload(request.body);
+
+  if (payload.isDefault) {
+    await prisma.savedPaymentCard.updateMany({
+      where: { userId: request.user.id },
+      data: { isDefault: false },
+    });
+  }
+
+  const card = await prisma.savedPaymentCard.update({
+    where: { id: cardId },
+    data: payload,
+  });
+
+  await syncUserDefaults(request.user.id);
+  response.json({
+    card: serializeSavedCard(card),
+    user: await getSerializedUser(request.user.id),
+  });
+});
+
+app.delete("/api/core/v1/profile/cards/:id", authMiddleware, async (request, response) => {
+  const cardId = getRouteId(request.params.id);
+  const existing = await prisma.savedPaymentCard.findFirst({
+    where: {
+      id: cardId,
+      userId: request.user.id,
+    },
+  });
+
+  if (!existing) {
+    response.status(404).json({ message: "Card not found." });
+    return;
+  }
+
+  await prisma.savedPaymentCard.delete({
+    where: { id: cardId },
+  });
+
+  await ensureCardDefault(request.user.id);
+  await syncUserDefaults(request.user.id);
   response.status(204).send();
 });
 
 app.get("/api/core/v1/bootstrap", authMiddleware, async (request, response) => {
   response.json(await buildBootstrap(request.user));
+});
+
+app.post("/api/core/v1/client/products/:productId/view", authMiddleware, async (request, response) => {
+  if (request.user.role !== "client") {
+    response.status(403).json({ message: "Only clients can track product views." });
+    return;
+  }
+
+  const productId = getRouteId(request.params.productId);
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+
+  if (!product) {
+    response.status(404).json({ message: "Product not found." });
+    return;
+  }
+
+  const productView = await prisma.productView.create({
+    data: {
+      id: `view-${randomUUID()}`,
+      userId: request.user.id,
+      productId,
+    },
+  });
+
+  response.status(201).json({ view: serializeProductView(productView) });
+});
+
+app.post("/api/core/v1/client/favorites/:productId", authMiddleware, async (request, response) => {
+  if (request.user.role !== "client") {
+    response.status(403).json({ message: "Only clients can save favorites." });
+    return;
+  }
+
+  const productId = getRouteId(request.params.productId);
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+
+  if (!product) {
+    response.status(404).json({ message: "Product not found." });
+    return;
+  }
+
+  const existing = await prisma.productFavorite.findFirst({
+    where: {
+      userId: request.user.id,
+      productId,
+    },
+  });
+
+  if (existing) {
+    response.json({ favorite: serializeFavorite(existing), active: true });
+    return;
+  }
+
+  const favorite = await prisma.productFavorite.create({
+    data: {
+      id: `fav-${randomUUID()}`,
+      userId: request.user.id,
+      productId,
+    },
+  });
+
+  response.status(201).json({ favorite: serializeFavorite(favorite), active: true });
+});
+
+app.delete("/api/core/v1/client/favorites/:productId", authMiddleware, async (request, response) => {
+  if (request.user.role !== "client") {
+    response.status(403).json({ message: "Only clients can remove favorites." });
+    return;
+  }
+
+  const productId = getRouteId(request.params.productId);
+
+  await prisma.productFavorite.deleteMany({
+    where: {
+      userId: request.user.id,
+      productId,
+    },
+  });
+
+  response.status(204).send();
+});
+
+app.patch("/api/core/v1/notifications/:id/read", authMiddleware, async (request, response) => {
+  const notificationId = getRouteId(request.params.id);
+
+  const notification = await prisma.notification.findFirst({
+    where: {
+      id: notificationId,
+      OR: [{ userId: request.user.id }, { roleTarget: request.user.role as PrismaRole }],
+    },
+  });
+
+  if (!notification) {
+    response.status(404).json({ message: "Notification not found." });
+    return;
+  }
+
+  const updated = await prisma.notification.update({
+    where: { id: notificationId },
+    data: {
+      readAt: new Date(),
+    },
+  });
+
+  await emitRealtimeSnapshots();
+  response.json({ notification: serializeNotification(updated) });
 });
 
 app.post("/api/core/v1/try-ons", authMiddleware, async (request, response) => {
@@ -201,7 +522,7 @@ app.post("/api/core/v1/orders", authMiddleware, async (request, response) => {
 
   const productId = String(request.body?.productId ?? "");
   const variantId = String(request.body?.variantId ?? "");
-  const paymentMethod = String(request.body?.paymentMethod ?? "") as PaymentMethod;
+  const paymentMethod = String(request.body?.paymentMethod ?? "") as DeliveryMethod;
   const deliveryMethod = String(request.body?.deliveryMethod ?? "") as DeliveryMethod;
   const shippingAddress = String(request.body?.shippingAddress ?? "").trim();
   const contactPhone = String(request.body?.contactPhone ?? "").trim();
@@ -234,6 +555,7 @@ app.post("/api/core/v1/orders", authMiddleware, async (request, response) => {
 
   const orderCount = await prisma.order.count();
   const timestamp = new Date();
+  const dueAt = addHours(timestamp, 48);
 
   const createdOrder = await prisma.order.create({
     data: {
@@ -246,28 +568,60 @@ app.post("/api/core/v1/orders", authMiddleware, async (request, response) => {
       status: "pending_franchisee",
       paymentStatus: "paid",
       deliveryMethod,
-      paymentMethod,
-      notes: notes || buildDefaultOrderNote(product.availability, scheduledDate),
+      paymentMethod: paymentMethod as never,
+      priority: "standard",
+      notes: notes || buildDefaultOrderNote(product.availability as ProductAvailability, scheduledDate),
       shippingAddress,
       contactPhone,
       scheduledDate: scheduledDate ? new Date(`${scheduledDate}T00:00:00.000Z`) : null,
+      dueAt,
       totalAmount: product.priceAmount,
       currency: product.currency,
+      slaHours: 48,
     },
     include: orderInclude,
   });
 
-  await emitOrdersSnapshot();
-  response.status(201).json({ order: serializeOrder(createdOrder) });
+  await prisma.orderAuditLog.create({
+    data: {
+      id: `audit-${randomUUID()}`,
+      orderId: createdOrder.id,
+      actorId: request.user.id,
+      actorName: request.user.name,
+      actorRole: request.user.role as PrismaRole,
+      action: "order_created",
+      message: "Client created a new order.",
+    },
+  });
+
+  await createNotificationForRole(
+    "franchisee",
+    "order_action",
+    createdOrder.id,
+    "New client order",
+    `${createdOrder.number} is waiting for franchisee intake.`,
+  );
+
+  await createNotificationForUser(
+    request.user.id,
+    "order_status",
+    createdOrder.id,
+    "Order confirmed",
+    `${createdOrder.number} entered the live operations flow.`,
+  );
+
+  await emitRealtimeSnapshots();
+
+  const hydratedOrder = await prisma.order.findUnique({
+    where: { id: createdOrder.id },
+    include: orderInclude,
+  });
+
+  response.status(201).json({ order: serializeOrder(hydratedOrder!) });
 });
 
 app.patch("/api/core/v1/orders/:id/status", authMiddleware, async (request, response) => {
-  if (request.user.role === "client") {
-    response.status(403).json({ message: "Client cannot update order status." });
-    return;
-  }
-
-  const orderId = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
+  const orderId = getRouteId(request.params.id);
   const nextStatus = String(request.body?.status ?? "") as OrderStatus;
 
   if (!nextStatus) {
@@ -275,34 +629,45 @@ app.patch("/api/core/v1/orders/:id/status", authMiddleware, async (request, resp
     return;
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-  });
+  try {
+    const result = await updateOrderWorkflowInternal({
+      actor: request.user,
+      orderId,
+      payload: {
+        status: nextStatus,
+        notifyClient: true,
+      },
+    });
 
-  if (!order) {
-    response.status(404).json({ message: "Order not found." });
-    return;
+    response.json({ order: result });
+  } catch (error) {
+    response.status(error instanceof Error && error.message === "Order not found." ? 404 : 403).json({
+      message: error instanceof Error ? error.message : "Workflow update failed.",
+    });
   }
+});
 
-  if (!canTransitionOrder(request.user.role, order.status as OrderStatus, nextStatus)) {
-    response.status(403).json({ message: "This role cannot move the order to that status." });
-    return;
+app.patch("/api/core/v1/orders/:id/workflow", authMiddleware, async (request, response) => {
+  const orderId = getRouteId(request.params.id);
+  const payload = parseWorkflowPayload(request.body);
+
+  try {
+    const result = await updateOrderWorkflowInternal({
+      actor: request.user,
+      orderId,
+      payload,
+    });
+
+    response.json({ order: result });
+  } catch (error) {
+    response.status(error instanceof Error && error.message === "Order not found." ? 404 : 403).json({
+      message: error instanceof Error ? error.message : "Workflow update failed.",
+    });
   }
-
-  const updatedOrder = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      status: nextStatus,
-    },
-    include: orderInclude,
-  });
-
-  await emitOrdersSnapshot();
-  response.json({ order: serializeOrder(updatedOrder) });
 });
 
 app.post("/api/core/v1/orders/:id/comments", authMiddleware, async (request, response) => {
-  const orderId = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
+  const orderId = getRouteId(request.params.id);
   const message = String(request.body?.message ?? "").trim();
 
   if (!message) {
@@ -328,12 +693,35 @@ app.post("/api/core/v1/orders/:id/comments", authMiddleware, async (request, res
     },
   });
 
+  await prisma.orderAuditLog.create({
+    data: {
+      id: `audit-${randomUUID()}`,
+      orderId,
+      actorId: request.user.id,
+      actorName: request.user.name,
+      actorRole: request.user.role as PrismaRole,
+      action: "comment_added",
+      message,
+    },
+  });
+
+  if (request.user.role !== "client") {
+    await createNotificationForUser(
+      order.customerId,
+      "order_action",
+      order.id,
+      "Order note updated",
+      `${request.user.name} added a new operational note to ${order.number}.`,
+    );
+  }
+
+  await emitRealtimeSnapshots();
+
   const updatedOrder = await prisma.order.findUnique({
     where: { id: orderId },
     include: orderInclude,
   });
 
-  await emitOrdersSnapshot();
   response.status(201).json({ order: serializeOrder(updatedOrder!) });
 });
 
@@ -343,7 +731,7 @@ app.post("/api/core/v1/orders/:id/attachments", authMiddleware, async (request, 
     return;
   }
 
-  const orderId = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
+  const orderId = getRouteId(request.params.id);
   const label = String(request.body?.label ?? "").trim();
   const url = String(request.body?.url ?? "").trim();
 
@@ -371,12 +759,25 @@ app.post("/api/core/v1/orders/:id/attachments", authMiddleware, async (request, 
     },
   });
 
+  await prisma.orderAuditLog.create({
+    data: {
+      id: `audit-${randomUUID()}`,
+      orderId,
+      actorId: request.user.id,
+      actorName: request.user.name,
+      actorRole: request.user.role as PrismaRole,
+      action: "attachment_added",
+      message: `${request.user.name} attached ${label}.`,
+    },
+  });
+
+  await emitRealtimeSnapshots();
+
   const updatedOrder = await prisma.order.findUnique({
     where: { id: orderId },
     include: orderInclude,
   });
 
-  await emitOrdersSnapshot();
   response.status(201).json({ order: serializeOrder(updatedOrder!) });
 });
 
@@ -416,7 +817,7 @@ app.post("/api/core/v1/admin/products", authMiddleware, async (request, response
       name: payload.name,
       subtitle: payload.subtitle,
       priceAmount: payload.priceAmount,
-      availability: payload.availability,
+      availability: payload.availability as never,
       style: payload.style,
       description: payload.description,
       composition: payload.composition,
@@ -424,28 +825,28 @@ app.post("/api/core/v1/admin/products", authMiddleware, async (request, response
       deliveryEstimate: payload.deliveryEstimate,
       featured: payload.featured,
       categoryId: payload.categoryId,
+      brandName: payload.brandName,
+      collectionName: payload.collectionName,
+      dropName: payload.dropName,
+      seasonLabel: payload.seasonLabel,
+      limitedEdition: payload.limitedEdition,
+      limitedQuantity: payload.limitedQuantity,
+      colors: payload.colors,
+      materials: payload.materials,
+      fitProfile: payload.fitProfile,
+      careInstructions: payload.careInstructions,
+      sizeGuide: payload.sizeGuide,
+      editorialStory: payload.editorialStory,
+      relatedProductIds: payload.relatedProductIds,
+      crossSellProductIds: payload.crossSellProductIds,
       media: {
-        create: [
-          {
-            id: `pm-${randomUUID()}`,
-            url: payload.coverUrl,
-            alt: `${payload.name} cover`,
-            kind: "cover",
-            sortOrder: 0,
-          },
-          ...payload.galleryUrls.map((url, index) => ({
-            id: `pm-${randomUUID()}`,
-            url,
-            alt: `${payload.name} gallery ${index + 1}`,
-            kind: "gallery" as const,
-            sortOrder: index + 1,
-          })),
-        ],
+        create: buildMediaRows(payload.name, payload.coverUrl, payload.galleryUrls),
       },
       variants: {
         create: payload.sizeLabels.map((sizeLabel) => ({
           id: `pv-${randomUUID()}`,
           sizeLabel,
+          colorLabel: payload.colors[0] ?? null,
           stock: payload.defaultStock,
         })),
       },
@@ -462,11 +863,12 @@ app.patch("/api/core/v1/admin/products/:id", authMiddleware, async (request, res
     return;
   }
 
-  const productId = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
+  const productId = getRouteId(request.params.id);
   const payload = parseProductPayload(request.body);
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
+    include: productInclude,
   });
 
   if (!product) {
@@ -474,13 +876,13 @@ app.patch("/api/core/v1/admin/products/:id", authMiddleware, async (request, res
     return;
   }
 
-  const updatedProduct = await prisma.product.update({
+  await prisma.product.update({
     where: { id: productId },
     data: {
       name: payload.name || product.name,
       subtitle: payload.subtitle || product.subtitle,
       priceAmount: payload.priceAmount || product.priceAmount,
-      availability: payload.availability || product.availability,
+      availability: (payload.availability || product.availability) as never,
       description: payload.description || product.description,
       composition: payload.composition || product.composition,
       fittingNotes: payload.fittingNotes || product.fittingNotes,
@@ -488,8 +890,21 @@ app.patch("/api/core/v1/admin/products/:id", authMiddleware, async (request, res
       featured: payload.featured,
       style: payload.style.length ? payload.style : product.style,
       categoryId: payload.categoryId || product.categoryId,
+      brandName: payload.brandName || product.brandName,
+      collectionName: payload.collectionName || product.collectionName,
+      dropName: payload.dropName || product.dropName,
+      seasonLabel: payload.seasonLabel || product.seasonLabel,
+      limitedEdition: payload.limitedEdition,
+      limitedQuantity: payload.limitedQuantity ?? product.limitedQuantity,
+      colors: payload.colors.length ? payload.colors : product.colors,
+      materials: payload.materials.length ? payload.materials : product.materials,
+      fitProfile: payload.fitProfile || product.fitProfile,
+      careInstructions: payload.careInstructions || product.careInstructions,
+      sizeGuide: payload.sizeGuide || product.sizeGuide,
+      editorialStory: payload.editorialStory || product.editorialStory,
+      relatedProductIds: payload.relatedProductIds.length ? payload.relatedProductIds : product.relatedProductIds,
+      crossSellProductIds: payload.crossSellProductIds.length ? payload.crossSellProductIds : product.crossSellProductIds,
     },
-    include: productInclude,
   });
 
   if (payload.coverUrl || payload.galleryUrls.length || payload.sizeLabels.length) {
@@ -501,35 +916,22 @@ app.patch("/api/core/v1/admin/products/:id", authMiddleware, async (request, res
       where: { productId },
     });
 
-    const mediaRows: Prisma.ProductMediaCreateManyInput[] = [
-      {
-        id: `pm-${randomUUID()}`,
-        productId,
-        url: payload.coverUrl || updatedProduct.media[0]?.url || "",
-        alt: `${updatedProduct.name} cover`,
-        kind: MediaKind.cover,
-        sortOrder: 0,
-      },
-      ...payload.galleryUrls.map((url, index) => ({
-        id: `pm-${randomUUID()}`,
-        productId,
-        url,
-        alt: `${updatedProduct.name} gallery ${index + 1}`,
-        kind: MediaKind.gallery,
-        sortOrder: index + 1,
-      })),
-    ].filter((item) => item.url);
-
     await prisma.productMedia.createMany({
-      data: mediaRows,
+      data: buildMediaRows(
+        payload.name || product.name,
+        payload.coverUrl || product.media[0]?.url || "",
+        payload.galleryUrls.length ? payload.galleryUrls : product.media.slice(1).map((item) => item.url),
+        productId,
+      ) as Prisma.ProductMediaCreateManyInput[],
     });
 
     await prisma.productVariant.createMany({
-      data: (payload.sizeLabels.length ? payload.sizeLabels : updatedProduct.variants.map((item) => item.sizeLabel)).map(
+      data: (payload.sizeLabels.length ? payload.sizeLabels : product.variants.map((item) => item.sizeLabel)).map(
         (sizeLabel) => ({
           id: `pv-${randomUUID()}`,
           productId,
           sizeLabel,
+          colorLabel: (payload.colors.length ? payload.colors : product.colors)[0] ?? null,
           stock: payload.defaultStock,
         }),
       ),
@@ -550,7 +952,7 @@ app.delete("/api/core/v1/admin/products/:id", authMiddleware, async (request, re
     return;
   }
 
-  const productId = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
+  const productId = getRouteId(request.params.id);
   const orderCount = await prisma.order.count({
     where: { productId },
   });
@@ -562,6 +964,82 @@ app.delete("/api/core/v1/admin/products/:id", authMiddleware, async (request, re
 
   await prisma.product.delete({
     where: { id: productId },
+  });
+
+  response.status(204).send();
+});
+
+app.post("/api/core/v1/admin/content", authMiddleware, async (request, response) => {
+  if (request.user.role !== "admin") {
+    response.status(403).json({ message: "Only admin role can manage content." });
+    return;
+  }
+
+  const payload = parseContentPayload(request.body);
+
+  if (!payload.slug || !payload.title || !payload.coverUrl) {
+    response.status(400).json({ message: "Content payload is incomplete." });
+    return;
+  }
+
+  const created = await prisma.contentEntry.create({
+    data: {
+      id: `content-${randomUUID()}`,
+      ...payload,
+      kind: payload.kind as ContentKind,
+      locale: normalizeLocale(payload.locale),
+    },
+  });
+
+  response.status(201).json({ contentEntry: serializeContentEntry(created) });
+});
+
+app.patch("/api/core/v1/admin/content/:id", authMiddleware, async (request, response) => {
+  if (request.user.role !== "admin") {
+    response.status(403).json({ message: "Only admin role can manage content." });
+    return;
+  }
+
+  const contentId = getRouteId(request.params.id);
+  const payload = parseContentPayload(request.body);
+
+  const existing = await prisma.contentEntry.findUnique({
+    where: { id: contentId },
+  });
+
+  if (!existing) {
+    response.status(404).json({ message: "Content entry not found." });
+    return;
+  }
+
+  const updated = await prisma.contentEntry.update({
+    where: { id: contentId },
+    data: {
+      kind: payload.kind ? (payload.kind as ContentKind) : existing.kind,
+      slug: payload.slug || existing.slug,
+      locale: payload.locale ? normalizeLocale(payload.locale) : existing.locale,
+      title: payload.title || existing.title,
+      summary: payload.summary || existing.summary,
+      body: payload.body || existing.body,
+      coverUrl: payload.coverUrl || existing.coverUrl,
+      eyebrow: payload.eyebrow || existing.eyebrow,
+      featured: payload.featured,
+    },
+  });
+
+  response.json({ contentEntry: serializeContentEntry(updated) });
+});
+
+app.delete("/api/core/v1/admin/content/:id", authMiddleware, async (request, response) => {
+  if (request.user.role !== "admin") {
+    response.status(403).json({ message: "Only admin role can manage content." });
+    return;
+  }
+
+  const contentId = getRouteId(request.params.id);
+
+  await prisma.contentEntry.delete({
+    where: { id: contentId },
   });
 
   response.status(204).send();
@@ -592,8 +1070,11 @@ io.use(async (socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  void listOrdersForUser(socket.data.user as User).then((orders) => {
+  const user = socket.data.user as User;
+
+  void Promise.all([listOrdersForUser(user), listNotificationsForUser(user)]).then(([orders, notifications]) => {
     socket.emit("orders:sync", orders);
+    socket.emit("notifications:sync", notifications);
   });
 });
 
@@ -608,7 +1089,9 @@ httpServer.on("error", (error) => {
     console.error(
       `Port ${port} is already in use. Most likely the core API is already running in another terminal.`,
     );
-    console.error(`Stop the existing process or change PORT in server/core-api/.env and EXPO_PUBLIC_CORE_API_URL in root .env.`);
+    console.error(
+      `Stop the existing process or change PORT in server/core-api/.env and EXPO_PUBLIC_CORE_API_URL in root .env.`,
+    );
     process.exit(1);
   }
 
@@ -645,6 +1128,12 @@ const orderInclude = {
     include: {
       author: true,
     },
+    orderBy: { createdAt: "asc" },
+  },
+  auditLogs: {
+    orderBy: { createdAt: "asc" },
+  },
+  tags: {
     orderBy: { createdAt: "asc" },
   },
 } satisfies Prisma.OrderInclude;
@@ -703,22 +1192,72 @@ async function createSession(userId: string) {
   return token;
 }
 
-async function buildBootstrap(user: User) {
-  const [categories, products, orders, tryOnSessions] = await Promise.all([
-    listCategories(),
-    listProducts(),
-    listOrdersForUser(user),
-    listTryOnsForUser(user),
-  ]);
-
-  return {
-    user,
+async function buildBootstrap(user: User): Promise<BootstrapPayload> {
+  const [
+    customers,
     categories,
     products,
     orders,
     tryOnSessions,
-    metrics: await buildMetrics(),
+    favorites,
+    productViews,
+    savedAddresses,
+    savedCards,
+    notifications,
+    rewards,
+    recommendations,
+    contentEntries,
+    metrics,
+    funnel,
+  ] = await Promise.all([
+    listCustomersForUser(user),
+    listCategories(),
+    listProducts(),
+    listOrdersForUser(user),
+    listTryOnsForUser(user),
+    listFavoritesForUser(user),
+    listProductViewsForUser(user),
+    listSavedAddressesForUser(user),
+    listSavedCardsForUser(user),
+    listNotificationsForUser(user),
+    listRewards(),
+    listRecommendationsForUser(user),
+    listContentEntries(),
+    buildMetrics(),
+    buildFunnel(),
+  ]);
+
+  return {
+    user,
+    customers,
+    categories,
+    products,
+    orders,
+    tryOnSessions,
+    favorites,
+    productViews,
+    savedAddresses,
+    savedCards,
+    notifications,
+    rewards,
+    recommendations,
+    contentEntries,
+    metrics,
+    funnel,
   };
+}
+
+async function listCustomersForUser(user: User): Promise<User[]> {
+  if (user.role === "client") {
+    return [];
+  }
+
+  const customers = await prisma.user.findMany({
+    where: { role: "client" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return customers.map(serializeUser);
 }
 
 async function listCategories(): Promise<Category[]> {
@@ -754,12 +1293,7 @@ async function listTryOnsForUser(user: User): Promise<TryOnSession[]> {
 
 async function listOrdersForUser(user: User): Promise<Order[]> {
   const orders = await prisma.order.findMany({
-    where:
-      user.role === "client"
-        ? {
-            customerId: user.id,
-          }
-        : undefined,
+    where: user.role === "client" ? { customerId: user.id } : undefined,
     include: orderInclude,
     orderBy: { createdAt: "desc" },
   });
@@ -767,10 +1301,107 @@ async function listOrdersForUser(user: User): Promise<Order[]> {
   return orders.map(serializeOrder);
 }
 
-async function buildMetrics() {
-  const [products, orders, revenue] = await Promise.all([
+async function listFavoritesForUser(user: User): Promise<Favorite[]> {
+  if (user.role !== "client") {
+    return [];
+  }
+
+  const favorites = await prisma.productFavorite.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return favorites.map(serializeFavorite);
+}
+
+async function listProductViewsForUser(user: User): Promise<ProductView[]> {
+  if (user.role !== "client") {
+    return [];
+  }
+
+  const productViews = await prisma.productView.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 24,
+  });
+
+  return productViews.map(serializeProductView);
+}
+
+async function listSavedAddressesForUser(user: User): Promise<SavedAddress[]> {
+  if (user.role !== "client") {
+    return [];
+  }
+
+  const addresses = await prisma.savedAddress.findMany({
+    where: { userId: user.id },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+
+  return addresses.map(serializeSavedAddress);
+}
+
+async function listSavedCardsForUser(user: User): Promise<SavedPaymentCard[]> {
+  if (user.role !== "client") {
+    return [];
+  }
+
+  const cards = await prisma.savedPaymentCard.findMany({
+    where: { userId: user.id },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+
+  return cards.map(serializeSavedCard);
+}
+
+async function listNotificationsForUser(user: User): Promise<Notification[]> {
+  const notifications = await prisma.notification.findMany({
+    where: {
+      OR: [{ userId: user.id }, { roleTarget: user.role as PrismaRole }],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return notifications.map(serializeNotification);
+}
+
+async function listRewards(): Promise<Reward[]> {
+  const rewards = await prisma.reward.findMany({
+    where: { active: true },
+    orderBy: [{ pointsRequired: "asc" }, { createdAt: "asc" }],
+  });
+
+  return rewards.map(serializeReward);
+}
+
+async function listRecommendationsForUser(user: User): Promise<Recommendation[]> {
+  if (user.role !== "client") {
+    return [];
+  }
+
+  const recommendations = await prisma.recommendation.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return recommendations.map(serializeRecommendation);
+}
+
+async function listContentEntries(locale?: AppLanguage): Promise<ContentEntryVm[]> {
+  const contentEntries = await prisma.contentEntry.findMany({
+    where: locale ? { locale } : undefined,
+    orderBy: [{ featured: "desc" }, { publishedAt: "desc" }],
+  });
+
+  return contentEntries.map(serializeContentEntry);
+}
+
+async function buildMetrics(): Promise<DashboardMetrics> {
+  const [products, orders, favorites, contentEntries, revenue] = await Promise.all([
     prisma.product.count(),
     prisma.order.count(),
+    prisma.productFavorite.count(),
+    prisma.contentEntry.count(),
     prisma.order.aggregate({
       _sum: {
         totalAmount: true,
@@ -782,33 +1413,410 @@ async function buildMetrics() {
   ]);
 
   const readyOrders = await prisma.order.count({
-    where: {
-      status: "ready",
-    },
+    where: { status: "ready" },
   });
 
   return {
     revenue: formatMoney(revenue._sum.totalAmount ?? 0),
-    plan: `${Math.min(100, readyOrders * 18)}%`,
+    plan: `${Math.min(100, readyOrders * 14)}%`,
     products,
     orders,
     readyOrders,
+    favoriteCount: favorites,
+    contentEntries,
   };
 }
 
-function serializeUser(user: {
-  id: string;
-  email: string;
-  name: string;
-  role: PrismaRole;
-  avatarUrl: string | null;
-  phone: string | null;
-  defaultShippingAddress: string | null;
-  paymentCardBrand: string | null;
-  paymentCardLast4: string | null;
-  paymentCardHolder: string | null;
-  loyaltyProgress: number;
-}): User {
+async function buildFunnel(): Promise<FunnelMetrics> {
+  const [productViews, favorites, orders, paidOrders, distinctViewedProducts] = await Promise.all([
+    prisma.productView.count(),
+    prisma.productFavorite.count(),
+    prisma.order.count(),
+    prisma.order.count({
+      where: { paymentStatus: "paid" },
+    }),
+    prisma.productView.findMany({
+      distinct: ["productId"],
+      select: { productId: true },
+    }),
+  ]);
+
+  return {
+    productViews,
+    productCards: distinctViewedProducts.length,
+    cartAdds: favorites + orders,
+    checkouts: orders,
+    paidOrders,
+    abandonedCarts: Math.max(productViews - paidOrders, 0),
+  };
+}
+
+async function updateOrderWorkflowInternal({
+  actor,
+  orderId,
+  payload,
+}: {
+  actor: User;
+  orderId: string;
+  payload: {
+    status?: OrderStatus;
+    priority?: PriorityLevelVm;
+    slaHours?: number;
+    returnRequested?: boolean;
+    exchangeRequested?: boolean;
+    cancellationRequested?: boolean;
+    qcChecklist?: string;
+    tags?: string[];
+    notifyClient?: boolean;
+  };
+}) {
+  if (actor.role === "client" || actor.role === "admin") {
+    throw new Error("This role cannot update operational workflow.");
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: orderInclude,
+  });
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  if (payload.status && !canTransitionOrder(actor.role, order.status as OrderStatus, payload.status)) {
+    throw new Error("This role cannot move the order to that status.");
+  }
+
+  const status = payload.status ?? (order.status as OrderStatus);
+  const slaHours = payload.slaHours ?? order.slaHours;
+  const dueAt =
+    payload.slaHours !== undefined
+      ? addHours(new Date(order.createdAt), payload.slaHours)
+      : order.dueAt ?? addHours(new Date(order.createdAt), order.slaHours);
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status,
+      priority: (payload.priority ?? order.priority) as PriorityLevel,
+      slaHours,
+      dueAt,
+      returnRequested: payload.returnRequested ?? order.returnRequested,
+      exchangeRequested: payload.exchangeRequested ?? order.exchangeRequested,
+      cancellationRequested: payload.cancellationRequested ?? order.cancellationRequested,
+      qcChecklist: payload.qcChecklist ?? order.qcChecklist,
+    },
+  });
+
+  if (payload.tags) {
+    await prisma.orderTag.deleteMany({
+      where: { orderId },
+    });
+
+    if (payload.tags.length) {
+      await prisma.orderTag.createMany({
+        data: payload.tags.map((label) => ({
+          id: `tag-${randomUUID()}`,
+          orderId,
+          label,
+        })),
+      });
+    }
+  }
+
+  const auditMessage = buildWorkflowAuditMessage(actor.role, payload, order.status as OrderStatus, status);
+
+  await prisma.orderAuditLog.create({
+    data: {
+      id: `audit-${randomUUID()}`,
+      orderId,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role as PrismaRole,
+      action: payload.status ? "status_changed" : "workflow_updated",
+      message: auditMessage,
+    },
+  });
+
+  await fanOutWorkflowNotifications(actor, order.customerId, order.id, order.number, payload, status);
+
+  await emitRealtimeSnapshots();
+
+  const hydrated = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: orderInclude,
+  });
+
+  return serializeOrder(hydrated!);
+}
+
+function buildWorkflowAuditMessage(
+  actorRole: Role,
+  payload: {
+    status?: OrderStatus;
+    priority?: PriorityLevelVm;
+    slaHours?: number;
+    returnRequested?: boolean;
+    exchangeRequested?: boolean;
+    cancellationRequested?: boolean;
+    qcChecklist?: string;
+    tags?: string[];
+    notifyClient?: boolean;
+  },
+  previousStatus: OrderStatus,
+  nextStatus: OrderStatus,
+) {
+  if (payload.status && previousStatus !== nextStatus) {
+    return `${actorRole} moved the order from ${previousStatus} to ${nextStatus}.`;
+  }
+
+  const fragments: string[] = [];
+
+  if (payload.priority) {
+    fragments.push(`priority -> ${payload.priority}`);
+  }
+
+  if (payload.slaHours !== undefined) {
+    fragments.push(`sla -> ${payload.slaHours}h`);
+  }
+
+  if (payload.returnRequested !== undefined) {
+    fragments.push(`return requested -> ${payload.returnRequested ? "yes" : "no"}`);
+  }
+
+  if (payload.exchangeRequested !== undefined) {
+    fragments.push(`exchange requested -> ${payload.exchangeRequested ? "yes" : "no"}`);
+  }
+
+  if (payload.cancellationRequested !== undefined) {
+    fragments.push(`cancellation requested -> ${payload.cancellationRequested ? "yes" : "no"}`);
+  }
+
+  if (payload.qcChecklist !== undefined) {
+    fragments.push("qc checklist updated");
+  }
+
+  if (payload.tags) {
+    fragments.push(`tags -> ${payload.tags.join(", ") || "cleared"}`);
+  }
+
+  return fragments.length
+    ? `${actorRole} updated workflow: ${fragments.join("; ")}.`
+    : `${actorRole} updated workflow details.`;
+}
+
+async function fanOutWorkflowNotifications(
+  actor: User,
+  customerId: string,
+  orderId: string,
+  orderNumber: string,
+  payload: {
+    status?: OrderStatus;
+    priority?: PriorityLevelVm;
+    slaHours?: number;
+    returnRequested?: boolean;
+    exchangeRequested?: boolean;
+    cancellationRequested?: boolean;
+    qcChecklist?: string;
+    tags?: string[];
+    notifyClient?: boolean;
+  },
+  status: OrderStatus,
+) {
+  if (payload.notifyClient || payload.status || payload.returnRequested || payload.exchangeRequested) {
+    const titleByStatus: Record<OrderStatus, string> = {
+      pending_franchisee: "Order is waiting for intake",
+      in_production: "Order entered production",
+      quality_check: "Order is in quality check",
+      ready: "Order is ready",
+      delivered: "Order delivered",
+      cancelled: "Order cancelled",
+      return_requested: "Return requested",
+      exchange_requested: "Exchange requested",
+    };
+
+    await createNotificationForUser(
+      customerId,
+      "order_status",
+      orderId,
+      titleByStatus[status],
+      `${orderNumber} status: ${status}.`,
+    );
+  }
+
+  if (payload.status) {
+    if (status === "pending_franchisee") {
+      await createNotificationForRole(
+        "franchisee",
+        "staff_action",
+        orderId,
+        "Order requires intake",
+        `${orderNumber} is waiting for franchisee review.`,
+      );
+    }
+
+    if (status === "in_production" || status === "quality_check") {
+      await createNotificationForRole(
+        "production",
+        "staff_action",
+        orderId,
+        "Production workflow updated",
+        `${orderNumber} moved to ${status}.`,
+      );
+    }
+
+    if (status === "ready" || status === "delivered") {
+      await createNotificationForRole(
+        "support",
+        "staff_action",
+        orderId,
+        "Client communication required",
+        `${orderNumber} moved to ${status}.`,
+      );
+    }
+  }
+
+  if (payload.returnRequested || payload.exchangeRequested || payload.cancellationRequested) {
+    await createNotificationForRole(
+      "support",
+      "order_action",
+      orderId,
+      "Client service action requested",
+      `${actor.name} flagged ${orderNumber} for ${
+        payload.returnRequested
+          ? "return"
+          : payload.exchangeRequested
+            ? "exchange"
+            : "cancellation"
+      }.`,
+    );
+  }
+}
+
+async function createNotificationForUser(
+  userId: string,
+  type: NotificationType,
+  orderId: string | null,
+  title: string,
+  body: string,
+) {
+  return prisma.notification.create({
+    data: {
+      id: `note-${randomUUID()}`,
+      userId,
+      orderId,
+      type,
+      title,
+      body,
+    },
+  });
+}
+
+async function createNotificationForRole(
+  roleTarget: Role,
+  type: NotificationType,
+  orderId: string | null,
+  title: string,
+  body: string,
+) {
+  return prisma.notification.create({
+    data: {
+      id: `note-${randomUUID()}`,
+      roleTarget: roleTarget as PrismaRole,
+      orderId,
+      type,
+      title,
+      body,
+    },
+  });
+}
+
+async function getSerializedUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new Error("User not found.");
+  }
+
+  return serializeUser(user);
+}
+
+async function syncUserDefaults(userId: string) {
+  const [address, card] = await Promise.all([
+    prisma.savedAddress.findFirst({
+      where: { userId, isDefault: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.savedPaymentCard.findFirst({
+      where: { userId, isDefault: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      defaultShippingAddress: address ? formatAddressLine(address) : null,
+      paymentCardBrand: card?.brand ?? null,
+      paymentCardLast4: card?.last4 ?? null,
+      paymentCardHolder: card?.holderName ?? null,
+    },
+  });
+}
+
+async function ensureAddressDefault(userId: string) {
+  const defaultCount = await prisma.savedAddress.count({
+    where: { userId, isDefault: true },
+  });
+
+  if (defaultCount > 0) {
+    return;
+  }
+
+  const first = await prisma.savedAddress.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (!first) {
+    return;
+  }
+
+  await prisma.savedAddress.update({
+    where: { id: first.id },
+    data: { isDefault: true },
+  });
+}
+
+async function ensureCardDefault(userId: string) {
+  const defaultCount = await prisma.savedPaymentCard.count({
+    where: { userId, isDefault: true },
+  });
+
+  if (defaultCount > 0) {
+    return;
+  }
+
+  const first = await prisma.savedPaymentCard.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (!first) {
+    return;
+  }
+
+  await prisma.savedPaymentCard.update({
+    where: { id: first.id },
+    data: { isDefault: true },
+  });
+}
+
+function serializeUser(
+  user: Prisma.UserGetPayload<Record<string, never>>,
+): User {
   return {
     id: user.id,
     email: user.email,
@@ -821,13 +1829,39 @@ function serializeUser(user: {
     paymentCardLast4: user.paymentCardLast4 ?? undefined,
     paymentCardHolder: user.paymentCardHolder ?? undefined,
     loyaltyProgress: user.loyaltyProgress,
+    loyaltyPoints: user.loyaltyPoints,
+    loyaltyTier: user.loyaltyTier as LoyaltyTier,
+    segment: user.segment,
+  };
+}
+
+function serializeSavedAddress(
+  address: Prisma.SavedAddressGetPayload<Record<string, never>>,
+): SavedAddress {
+  return {
+    id: address.id,
+    label: address.label,
+    city: address.city,
+    line1: address.line1,
+    line2: address.line2 ?? undefined,
+    isDefault: address.isDefault,
+  };
+}
+
+function serializeSavedCard(
+  card: Prisma.SavedPaymentCardGetPayload<Record<string, never>>,
+): SavedPaymentCard {
+  return {
+    id: card.id,
+    brand: card.brand,
+    holderName: card.holderName,
+    last4: card.last4,
+    isDefault: card.isDefault,
   };
 }
 
 function serializeProduct(
-  product: Prisma.ProductGetPayload<{
-    include: typeof productInclude;
-  }>,
+  product: Prisma.ProductGetPayload<{ include: typeof productInclude }>,
 ): Product {
   return {
     id: product.id,
@@ -847,48 +1881,74 @@ function serializeProduct(
     featured: product.featured,
     categoryId: product.categoryId,
     categoryName: product.category.name,
-    media: product.media.map((media) => ({
-      id: media.id,
-      url: media.url,
-      alt: media.alt,
-      kind: media.kind,
-      sortOrder: media.sortOrder,
+    brandName: product.brandName,
+    collectionName: product.collectionName,
+    dropName: product.dropName,
+    seasonLabel: product.seasonLabel,
+    limitedEdition: product.limitedEdition,
+    limitedQuantity: product.limitedQuantity ?? undefined,
+    colors: product.colors,
+    materials: product.materials,
+    fitProfile: product.fitProfile,
+    careInstructions: product.careInstructions,
+    sizeGuide: product.sizeGuide,
+    editorialStory: product.editorialStory,
+    relatedProductIds: product.relatedProductIds,
+    crossSellProductIds: product.crossSellProductIds,
+    media: product.media.map((item) => ({
+      id: item.id,
+      url: item.url,
+      alt: item.alt,
+      kind: item.kind,
+      sortOrder: item.sortOrder,
     })),
     variants: product.variants.map((variant) => ({
       id: variant.id,
       sizeLabel: variant.sizeLabel,
+      colorLabel: variant.colorLabel ?? undefined,
       stock: variant.stock,
       reserved: variant.reserved,
     })),
   };
 }
 
-function serializeTryOn(tryOn: {
-  id: string;
-  userId: string;
-  productId: string;
-  sourceImageUrl: string;
-  resultImageUrl: string | null;
-  status: string;
-  notes: string;
-  createdAt: Date;
-}): TryOnSession {
+function serializeFavorite(
+  favorite: Prisma.ProductFavoriteGetPayload<Record<string, never>>,
+): Favorite {
+  return {
+    id: favorite.id,
+    productId: favorite.productId,
+    createdAt: favorite.createdAt.toISOString(),
+  };
+}
+
+function serializeProductView(
+  productView: Prisma.ProductViewGetPayload<Record<string, never>>,
+): ProductView {
+  return {
+    id: productView.id,
+    productId: productView.productId,
+    createdAt: productView.createdAt.toISOString(),
+  };
+}
+
+function serializeTryOn(
+  tryOn: Prisma.TryOnSessionGetPayload<Record<string, never>>,
+): TryOnSession {
   return {
     id: tryOn.id,
     userId: tryOn.userId,
     productId: tryOn.productId,
     sourceImageUrl: tryOn.sourceImageUrl,
     resultImageUrl: tryOn.resultImageUrl ?? undefined,
-    status: tryOn.status as TryOnSession["status"],
+    status: tryOn.status,
     notes: tryOn.notes,
     createdAt: tryOn.createdAt.toISOString(),
   };
 }
 
 function serializeOrder(
-  order: Prisma.OrderGetPayload<{
-    include: typeof orderInclude;
-  }>,
+  order: Prisma.OrderGetPayload<{ include: typeof orderInclude }>,
 ): Order {
   return {
     id: order.id,
@@ -896,22 +1956,30 @@ function serializeOrder(
     productId: order.productId,
     productName: order.product.name,
     productSku: order.product.sku,
-    productMediaUrl: order.product.media[0]?.url,
+    productMediaUrl: order.product.media[0]?.url ?? undefined,
     variantId: order.variantId ?? undefined,
-    sizeLabel: order.variant?.sizeLabel,
+    sizeLabel: order.variant?.sizeLabel ?? undefined,
     customerId: order.customerId,
     customerName: order.customer.name,
     status: order.status as OrderStatus,
     paymentStatus: order.paymentStatus,
     deliveryMethod: order.deliveryMethod,
     paymentMethod: order.paymentMethod,
+    priority: order.priority as PriorityLevelVm,
     notes: order.notes,
     shippingAddress: order.shippingAddress,
     contactPhone: order.contactPhone,
-    scheduledDate: order.scheduledDate?.toISOString().slice(0, 10),
+    scheduledDate: order.scheduledDate?.toISOString(),
+    dueAt: order.dueAt?.toISOString(),
     tryOnId: order.tryOnId ?? undefined,
     totalAmount: order.totalAmount,
     totalFormatted: formatMoney(order.totalAmount, order.currency),
+    slaHours: order.slaHours,
+    returnRequested: order.returnRequested,
+    exchangeRequested: order.exchangeRequested,
+    cancellationRequested: order.cancellationRequested,
+    qcChecklist: order.qcChecklist ?? undefined,
+    internalTags: order.tags.map((tag) => tag.label),
     createdAt: order.createdAt.toISOString(),
     comments: order.comments.map((comment) => ({
       id: comment.id,
@@ -929,17 +1997,85 @@ function serializeOrder(
       authorName: attachment.author.name,
       createdAt: attachment.createdAt.toISOString(),
     })),
+    auditLogs: order.auditLogs.map((log) => ({
+      id: log.id,
+      action: log.action,
+      message: log.message,
+      actorId: log.actorId ?? undefined,
+      actorName: log.actorName,
+      actorRole: log.actorRole as Role,
+      createdAt: log.createdAt.toISOString(),
+    })),
   };
 }
 
-function hashPassword(password: string) {
-  return createHash("sha256").update(password).digest("hex");
+function serializeNotification(
+  notification: Prisma.NotificationGetPayload<Record<string, never>>,
+): Notification {
+  return {
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    body: notification.body,
+    createdAt: notification.createdAt.toISOString(),
+    read: Boolean(notification.readAt),
+    orderId: notification.orderId ?? undefined,
+    roleTarget: notification.roleTarget as Role | undefined,
+  };
 }
 
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
+function serializeReward(
+  reward: Prisma.RewardGetPayload<Record<string, never>>,
+): Reward {
+  return {
+    id: reward.id,
+    title: reward.title,
+    description: reward.description,
+    pointsRequired: reward.pointsRequired,
+    tier: reward.tier as LoyaltyTier,
+    active: reward.active,
+  };
+}
+
+function serializeRecommendation(
+  recommendation: Prisma.RecommendationGetPayload<Record<string, never>>,
+): Recommendation {
+  return {
+    id: recommendation.id,
+    productId: recommendation.productId,
+    label: recommendation.label,
+    reason: recommendation.reason,
+  };
+}
+
+function serializeContentEntry(
+  entry: Prisma.ContentEntryGetPayload<Record<string, never>>,
+): ContentEntryVm {
+  return {
+    id: entry.id,
+    kind: entry.kind,
+    slug: entry.slug,
+    locale: normalizeLocale(entry.locale),
+    title: entry.title,
+    summary: entry.summary,
+    body: entry.body,
+    coverUrl: entry.coverUrl,
+    eyebrow: entry.eyebrow,
+    featured: entry.featured,
+    publishedAt: entry.publishedAt.toISOString(),
+  };
+}
+
+function hashPassword(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function addDays(date: Date, amount: number) {
+  return new Date(date.getTime() + amount * 24 * 60 * 60 * 1000);
+}
+
+function addHours(date: Date, amount: number) {
+  return new Date(date.getTime() + amount * 60 * 60 * 1000);
 }
 
 function formatMoney(amount: number, currency = "KZT") {
@@ -947,71 +2083,219 @@ function formatMoney(amount: number, currency = "KZT") {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
-  }).format(amount);
+  })
+    .format(amount)
+    .replace("₸", "KZT");
 }
 
 function buildDefaultOrderNote(availability: ProductAvailability, scheduledDate?: string) {
   if (availability === "preorder") {
-    return scheduledDate ? `Preorder confirmed for ${scheduledDate}.` : "Preorder confirmed.";
+    return scheduledDate
+      ? `Preorder reserved for ${scheduledDate}.`
+      : "Preorder item reserved for production scheduling.";
   }
 
-  return "Direct purchase confirmed.";
+  return scheduledDate ? `Ready-to-ship item reserved for ${scheduledDate}.` : "Client confirmed standard order.";
 }
 
-function canTransitionOrder(role: Role, currentStatus: OrderStatus, nextStatus: OrderStatus) {
-  if (role === "franchisee") {
-    return (
-      (currentStatus === "pending_franchisee" && nextStatus === "in_production") ||
-      (currentStatus === "ready" && nextStatus === "delivered")
-    );
+function canTransitionOrder(role: Role, current: OrderStatus, next: OrderStatus) {
+  const allowedByRole: Record<Role, OrderStatus[]> = {
+    client: [],
+    admin: [],
+    franchisee: ["pending_franchisee", "in_production", "cancelled"],
+    production: ["in_production", "quality_check", "ready"],
+    support: ["quality_check", "ready", "delivered", "cancelled", "return_requested", "exchange_requested"],
+  };
+
+  if (!allowedByRole[role].includes(next)) {
+    return false;
   }
 
-  if (role === "production") {
-    return (
-      (currentStatus === "in_production" && nextStatus === "quality_check") ||
-      (currentStatus === "quality_check" && nextStatus === "ready")
-    );
-  }
+  const workflow: Record<OrderStatus, OrderStatus[]> = {
+    pending_franchisee: ["in_production", "cancelled"],
+    in_production: ["quality_check", "cancelled"],
+    quality_check: ["ready", "exchange_requested", "return_requested"],
+    ready: ["delivered", "return_requested", "exchange_requested"],
+    delivered: ["return_requested", "exchange_requested"],
+    cancelled: [],
+    return_requested: ["cancelled", "delivered"],
+    exchange_requested: ["in_production", "ready"],
+  };
 
-  return false;
+  return current === next || workflow[current].includes(next);
 }
 
 function slugify(value: string) {
   return value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .trim()
+    .replace(/[^a-z0-9\u0400-\u04ff]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
-function parseProductPayload(body: unknown) {
-  const source = (body ?? {}) as Record<string, unknown>;
+function getRouteId(value: string | string[] | undefined) {
+  return Array.isArray(value) ? String(value[0] ?? "").trim() : String(value ?? "").trim();
+}
+
+function normalizeLocale(value: string): AppLanguage {
+  if (value === "kk" || value === "en") {
+    return value;
+  }
+
+  return "ru";
+}
+
+function parseAddressPayload(body: unknown) {
+  const data = (body ?? {}) as Record<string, unknown>;
+
   return {
-    name: String(source.name ?? "").trim(),
-    subtitle: String(source.subtitle ?? "").trim() || "Editorial product card generated from admin.",
-    categoryId: String(source.categoryId ?? "").trim(),
-    priceAmount: Number(source.priceAmount ?? 0),
-    availability: (String(source.availability ?? "in_stock") || "in_stock") as ProductAvailability,
-    description: String(source.description ?? "").trim() || "New AVISHU catalog item.",
-    composition: String(source.composition ?? "").trim() || "Premium material blend.",
-    fittingNotes: String(source.fittingNotes ?? "").trim() || "Structured fit profile.",
-    deliveryEstimate: String(source.deliveryEstimate ?? "").trim() || "Ships in 2-4 days.",
-    featured: Boolean(source.featured ?? false),
-    coverUrl: String(source.coverUrl ?? "").trim(),
-    galleryUrls: Array.isArray(source.galleryUrls)
-      ? source.galleryUrls.map((item) => String(item).trim()).filter(Boolean)
-      : [],
-    sizeLabels: Array.isArray(source.sizeLabels)
-      ? source.sizeLabels.map((item) => String(item).trim().toUpperCase()).filter(Boolean)
-      : [],
-    style: Array.isArray(source.style)
-      ? source.style.map((item) => String(item).trim().toLowerCase()).filter(Boolean)
-      : [],
-    defaultStock: Number(source.defaultStock ?? 3),
+    label: String(data.label ?? "").trim(),
+    city: String(data.city ?? "").trim(),
+    line1: String(data.line1 ?? "").trim(),
+    line2: String(data.line2 ?? "").trim() || null,
+    isDefault: Boolean(data.isDefault),
   };
 }
 
-async function emitOrdersSnapshot() {
-  const sockets = Array.from(io.sockets.sockets.values());
+function parseCardPayload(body: unknown) {
+  const data = (body ?? {}) as Record<string, unknown>;
+
+  return {
+    brand: String(data.brand ?? "").trim(),
+    holderName: String(data.holderName ?? "").trim(),
+    last4: String(data.last4 ?? "").replace(/\D/g, "").slice(-4),
+    isDefault: Boolean(data.isDefault),
+  };
+}
+
+function parseWorkflowPayload(body: unknown) {
+  const data = (body ?? {}) as Record<string, unknown>;
+
+  return {
+    status: data.status ? (String(data.status).trim() as OrderStatus) : undefined,
+    priority: data.priority ? (String(data.priority).trim() as PriorityLevelVm) : undefined,
+    slaHours: Number.isFinite(Number(data.slaHours)) ? Number(data.slaHours) : undefined,
+    returnRequested:
+      typeof data.returnRequested === "boolean" ? data.returnRequested : undefined,
+    exchangeRequested:
+      typeof data.exchangeRequested === "boolean" ? data.exchangeRequested : undefined,
+    cancellationRequested:
+      typeof data.cancellationRequested === "boolean" ? data.cancellationRequested : undefined,
+    qcChecklist: data.qcChecklist !== undefined ? String(data.qcChecklist).trim() : undefined,
+    tags: Array.isArray(data.tags) ? data.tags.map((item) => String(item).trim()).filter(Boolean) : undefined,
+    notifyClient: typeof data.notifyClient === "boolean" ? data.notifyClient : undefined,
+  };
+}
+
+function parseProductPayload(body: unknown) {
+  const data = (body ?? {}) as Record<string, unknown>;
+
+  return {
+    name: String(data.name ?? "").trim(),
+    subtitle: String(data.subtitle ?? "").trim(),
+    categoryId: String(data.categoryId ?? "").trim(),
+    priceAmount: Number.isFinite(Number(data.priceAmount)) ? Number(data.priceAmount) : 0,
+    availability: String(data.availability ?? "in_stock").trim() as ProductAvailability,
+    description: String(data.description ?? "").trim(),
+    composition: String(data.composition ?? "").trim(),
+    fittingNotes: String(data.fittingNotes ?? "").trim(),
+    deliveryEstimate: String(data.deliveryEstimate ?? "").trim(),
+    featured: Boolean(data.featured),
+    coverUrl: String(data.coverUrl ?? "").trim(),
+    galleryUrls: Array.isArray(data.galleryUrls)
+      ? data.galleryUrls.map((item) => String(item).trim()).filter(Boolean)
+      : [],
+    sizeLabels: Array.isArray(data.sizeLabels)
+      ? data.sizeLabels.map((item) => String(item).trim()).filter(Boolean)
+      : [],
+    style: Array.isArray(data.style) ? data.style.map((item) => String(item).trim()).filter(Boolean) : [],
+    defaultStock: Number.isFinite(Number(data.defaultStock)) ? Number(data.defaultStock) : 0,
+    brandName: String(data.brandName ?? "").trim(),
+    collectionName: String(data.collectionName ?? "").trim(),
+    dropName: String(data.dropName ?? "").trim(),
+    seasonLabel: String(data.seasonLabel ?? "").trim(),
+    limitedEdition: Boolean(data.limitedEdition),
+    limitedQuantity: Number.isFinite(Number(data.limitedQuantity)) ? Number(data.limitedQuantity) : undefined,
+    colors: Array.isArray(data.colors) ? data.colors.map((item) => String(item).trim()).filter(Boolean) : [],
+    materials: Array.isArray(data.materials)
+      ? data.materials.map((item) => String(item).trim()).filter(Boolean)
+      : [],
+    fitProfile: String(data.fitProfile ?? "").trim(),
+    careInstructions: String(data.careInstructions ?? "").trim(),
+    sizeGuide: String(data.sizeGuide ?? "").trim(),
+    editorialStory: String(data.editorialStory ?? "").trim(),
+    relatedProductIds: Array.isArray(data.relatedProductIds)
+      ? data.relatedProductIds.map((item) => String(item).trim()).filter(Boolean)
+      : [],
+    crossSellProductIds: Array.isArray(data.crossSellProductIds)
+      ? data.crossSellProductIds.map((item) => String(item).trim()).filter(Boolean)
+      : [],
+  };
+}
+
+function parseContentPayload(body: unknown) {
+  const data = (body ?? {}) as Record<string, unknown>;
+
+  return {
+    kind: String(data.kind ?? "journal").trim(),
+    slug: String(data.slug ?? "").trim(),
+    locale: String(data.locale ?? "ru").trim(),
+    title: String(data.title ?? "").trim(),
+    summary: String(data.summary ?? "").trim(),
+    body: String(data.body ?? "").trim(),
+    coverUrl: String(data.coverUrl ?? "").trim(),
+    eyebrow: String(data.eyebrow ?? "").trim(),
+    featured: Boolean(data.featured),
+    publishedAt: addDays(new Date(), 0),
+  };
+}
+
+function buildMediaRows(
+  name: string,
+  coverUrl: string,
+  galleryUrls: string[],
+  productId?: string,
+): Array<{
+  id: string;
+  url: string;
+  alt: string;
+  kind: MediaKind;
+  sortOrder: number;
+  productId?: string;
+}> {
+  const rows = [
+    {
+      id: `pm-${randomUUID()}`,
+      ...(productId ? { productId } : {}),
+      url: coverUrl,
+      alt: `${name} cover`,
+      kind: "cover" as MediaKind,
+      sortOrder: 0,
+    },
+    ...galleryUrls.map((url, index) => ({
+      id: `pm-${randomUUID()}`,
+      ...(productId ? { productId } : {}),
+      url,
+      alt: `${name} gallery ${index + 1}`,
+      kind: (index === 0 ? "detail" : "gallery") as MediaKind,
+      sortOrder: index + 1,
+    })),
+  ];
+
+  return rows.filter((item) => item.url);
+}
+
+function formatAddressLine(address: {
+  label: string;
+  city: string;
+  line1: string;
+  line2?: string | null;
+}) {
+  return [address.label, address.city, address.line1, address.line2].filter(Boolean).join(", ");
+}
+
+async function emitRealtimeSnapshots() {
+  const sockets = await io.fetchSockets();
 
   await Promise.all(
     sockets.map(async (socket) => {
@@ -1021,7 +2305,13 @@ async function emitOrdersSnapshot() {
         return;
       }
 
-      socket.emit("orders:sync", await listOrdersForUser(user));
+      const [orders, notifications] = await Promise.all([
+        listOrdersForUser(user),
+        listNotificationsForUser(user),
+      ]);
+
+      socket.emit("orders:sync", orders);
+      socket.emit("notifications:sync", notifications);
     }),
   );
 }
@@ -1030,7 +2320,7 @@ declare global {
   namespace Express {
     interface Request {
       user: User;
-      token: string;
+      token?: string;
     }
   }
 }
