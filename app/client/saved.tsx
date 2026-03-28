@@ -1,5 +1,6 @@
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MonoButton } from "../../src/components/MonoButton";
 import { Panel } from "../../src/components/Panel";
@@ -97,6 +98,9 @@ export default function SavedScreen() {
   const orders = useAppStore((state) => state.orders);
   const copy = COPY[language];
 
+  const insets = useSafeAreaInsets();
+  const extraBottomPadding = Platform.OS === "web" ? 0 : insets.bottom + 80;
+
   if (redirect) {
     return redirect;
   }
@@ -121,7 +125,13 @@ export default function SavedScreen() {
 
   return (
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle} profileRoute="/profile">
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: 24 + extraBottomPadding }
+        ]} 
+        showsVerticalScrollIndicator={false}
+      >
         <Panel style={styles.section}>
           <SectionHeading title={copy.favoritesTitle} subtitle={copy.favoritesSubtitle} compact />
           <View style={styles.productGrid}>
@@ -282,7 +292,6 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   container: {
     gap: 18,
-    paddingBottom: 24,
   },
   section: {
     gap: 14,
