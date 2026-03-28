@@ -113,8 +113,6 @@ export function ProductCard({
           {product.subtitle}
         </Text>
 
-        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{product.subtitle}</Text>
-
         <View style={styles.footer}>
           <View style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
             <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
@@ -154,6 +152,8 @@ const styles = StyleSheet.create({
   },
   cardMobile: {
     width: "48%", 
+    flexBasis: "auto", 
+    flexGrow: 0,   
     minHeight: 0,
     borderRadius: 16,
     overflow: "hidden", 
