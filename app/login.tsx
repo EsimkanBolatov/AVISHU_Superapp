@@ -203,17 +203,17 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.container, isCompact && styles.containerCompact]} showsVerticalScrollIndicator={false}>
         <View style={[styles.topbar, isCompact && styles.topbarCompact]}>
           <MonoButton label={copy.back} variant="secondary" onPress={() => router.replace("/")} />
-          <View style={styles.topbarRight}>
+          <View style={[styles.topbarRight, isCompact && styles.topbarRightCompact]}>
             <LanguageSwitch compact={isCompact} />
             <ThemeSwitch compact={isCompact} />
           </View>
         </View>
 
         <View style={[styles.grid, isCompact && styles.gridCompact]}>
-          <Panel style={styles.leftPanel}>
+          <Panel style={[styles.leftPanel, isCompact && styles.leftPanelCompact]}>
             <StatusPill label={copy.badge} tone="solid" />
             <Text style={[styles.brand, isCompact && styles.brandCompact, { color: theme.colors.textPrimary }]}>AVISHU</Text>
             <Text style={[styles.title, isCompact && styles.titleCompact, { color: theme.colors.textPrimary }]}>{copy.title}</Text>
@@ -297,15 +297,18 @@ export default function LoginScreen() {
 
             <View style={[styles.visualFrame, isCompact && styles.visualFrameCompact, { borderColor: theme.colors.borderSoft }]}>
               <View style={[styles.visualInner, { backgroundColor: theme.colors.surfaceSecondary }]}>
-                <Image source={loginHeroArt} style={[styles.imageFill, isCompact && styles.imageFillCompact]} resizeMode="cover" />
-                <View
-                  style={[
-                    styles.visualVeil,
-                    {
-                      backgroundColor: theme.colors.background,
-                    },
-                  ]}
-                />
+                {/* Исправил логику картинки, чтобы она адекватно вписывалась в мобилку */}
+                <Image source={loginHeroArt} style={[styles.imageFill, isCompact && styles.imageFillCompact]} resizeMode={isCompact ? "contain" : "cover"} />
+                {!isCompact && (
+                  <View
+                    style={[
+                      styles.visualVeil,
+                      {
+                        backgroundColor: theme.colors.background,
+                      },
+                    ]}
+                  />
+                )}
               </View>
             </View>
 
@@ -333,15 +336,19 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
     gap: 18,
   },
+  containerCompact: {
+    paddingHorizontal: 16,
+  },
   topbar: {
     flexDirection: "row",
-    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: 12,
     alignItems: "center",
   },
   topbarCompact: {
-    alignItems: "flex-start",
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 16,
   },
   topbarRight: {
     flexDirection: "row",
@@ -349,21 +356,29 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: "center",
   },
+  topbarRightCompact: {
+    justifyContent: "flex-start",
+  },
   grid: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 18,
+    alignItems: "stretch",
   },
   gridCompact: {
+    flexDirection: "column",
     gap: 14,
   },
   leftPanel: {
-    flex: 1.02,
+    flex: 1,
     minWidth: 340,
     gap: 18,
   },
+  leftPanelCompact: {
+    minWidth: "100%",
+    flex: 0,
+  },
   rightPanel: {
-    flex: 0.98,
+    flex: 1,
     minWidth: 320,
     minHeight: 980,
     gap: 18,
@@ -372,6 +387,7 @@ const styles = StyleSheet.create({
   rightPanelCompact: {
     minWidth: "100%",
     minHeight: 0,
+    flex: 0,
     gap: 14,
   },
   brand: {
@@ -483,11 +499,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   visualFrameCompact: {
-    minHeight: 280,
+    minHeight: 240,
+    height: 240, // Фиксируем высоту для мобилки
+    flex: 0,
   },
   visualInner: {
     flex: 1,
     overflow: "hidden",
+    justifyContent: 'center', // Центрируем картинку
+    alignItems: 'center',
   },
   imageFill: {
     position: "absolute",
@@ -498,10 +518,11 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.05 }],
   },
   imageFillCompact: {
-    right: -160,
-    bottom: -20,
-    width: 620,
-    height: 480,
+    position: 'relative', // Убираем абсолютное позиционирование на мобилке
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
     transform: [{ scale: 1 }],
   },
   visualVeil: {
