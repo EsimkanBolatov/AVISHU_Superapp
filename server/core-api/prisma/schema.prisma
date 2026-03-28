@@ -12,6 +12,7 @@ enum Role {
   admin
   franchisee
   production
+  support
 }
 
 enum ProductAvailability {
@@ -25,6 +26,9 @@ enum OrderStatus {
   quality_check
   ready
   delivered
+  cancelled
+  return_requested
+  exchange_requested
 }
 
 enum PaymentStatus {
@@ -57,28 +61,66 @@ enum MediaKind {
   detail
 }
 
+enum PriorityLevel {
+  standard
+  high
+  vip
+}
+
+enum NotificationType {
+  order_status
+  order_action
+  staff_action
+  reward
+  crm
+}
+
+enum ContentKind {
+  journal
+  lookbook
+  campaign
+  collection_story
+}
+
+enum LoyaltyTier {
+  silver
+  gold
+  black
+}
+
 model User {
-  id              String            @id
-  email           String            @unique
-  passwordHash    String
-  name            String
-  role            Role
-  avatarUrl       String?
-  phone           String?
+  id                     String            @id
+  email                  String            @unique
+  passwordHash           String
+  name                   String
+  role                   Role
+  avatarUrl              String?
+  phone                  String?
   defaultShippingAddress String?
-  paymentCardBrand String?
-  paymentCardLast4 String?
-  paymentCardHolder String?
-  loyaltyProgress Int               @default(0)
-  sessions        Session[]
-  orders          Order[]           @relation("CustomerOrders")
-  tryOnSessions   TryOnSession[]
-  orderComments   OrderComment[]    @relation("CommentAuthor")
-  orderAttachments OrderAttachment[] @relation("AttachmentAuthor")
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  paymentCardBrand       String?
+  paymentCardLast4       String?
+  paymentCardHolder      String?
+  loyaltyProgress        Int               @default(0)
+  loyaltyPoints          Int               @default(0)
+  loyaltyTier            LoyaltyTier       @default(silver)
+  segment                String            @default("new_client")
+  sessions               Session[]
+  orders                 Order[]           @relation("CustomerOrders")
+  tryOnSessions          TryOnSession[]
+  orderComments          OrderComment[]    @relation("CommentAuthor")
+  orderAttachments       OrderAttachment[] @relation("AttachmentAuthor")
+  auditLogs              OrderAuditLog[]   @relation("AuditActor")
+  favorites              ProductFavorite[]
+  productViews           ProductView[]
+  savedAddresses         SavedAddress[]
+  savedPaymentCards      SavedPaymentCard[]
+  notifications          Notification[]
+  recommendations        Recommendation[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
   @@index([role])
+  @@index([segment])
 }
 
 model Session {
@@ -104,30 +146,50 @@ model Category {
 }
 
 model Product {
-  id              String              @id
-  slug            String              @unique
-  sku             String              @unique
-  name            String
-  subtitle        String
-  priceAmount     Int
-  currency        String              @default("KZT")
-  availability    ProductAvailability
-  style           String[]
-  description     String
-  composition     String
-  fittingNotes    String
-  deliveryEstimate String
-  featured        Boolean             @default(false)
-  categoryId      String
-  category        Category            @relation(fields: [categoryId], references: [id])
-  media           ProductMedia[]
-  variants        ProductVariant[]
-  orders          Order[]
-  tryOnSessions   TryOnSession[]
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id                String              @id
+  slug              String              @unique
+  sku               String              @unique
+  name              String
+  subtitle          String
+  priceAmount       Int
+  currency          String              @default("KZT")
+  availability      ProductAvailability
+  style             String[]
+  description       String
+  composition       String
+  fittingNotes      String
+  deliveryEstimate  String
+  featured          Boolean             @default(false)
+  categoryId        String
+  brandName         String              @default("AVISHU")
+  collectionName    String              @default("Core")
+  dropName          String              @default("Drop 01")
+  seasonLabel       String              @default("SS26")
+  limitedEdition    Boolean             @default(false)
+  limitedQuantity   Int?
+  colors            String[]
+  materials         String[]
+  fitProfile        String              @default("relaxed")
+  careInstructions  String              @default("Dry clean only.")
+  sizeGuide         String              @default("Choose your regular size for a relaxed fit.")
+  editorialStory    String              @default("Editorial story coming soon.")
+  relatedProductIds String[]
+  crossSellProductIds String[]
+  category          Category            @relation(fields: [categoryId], references: [id])
+  media             ProductMedia[]
+  variants          ProductVariant[]
+  orders            Order[]
+  tryOnSessions     TryOnSession[]
+  favorites         ProductFavorite[]
+  views             ProductView[]
+  recommendations   Recommendation[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
   @@index([categoryId])
+  @@index([brandName])
+  @@index([collectionName])
+  @@index([seasonLabel])
 }
 
 model ProductMedia {
@@ -144,15 +206,117 @@ model ProductMedia {
 }
 
 model ProductVariant {
-  id        String  @id
-  productId String
-  sizeLabel String
-  stock     Int
-  reserved  Int     @default(0)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orders    Order[]
+  id         String  @id
+  productId  String
+  sizeLabel  String
+  colorLabel String?
+  stock      Int
+  reserved   Int     @default(0)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orders     Order[]
 
   @@index([productId])
+}
+
+model ProductFavorite {
+  id        String   @id
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+}
+
+model ProductView {
+  id        String   @id
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([productId, createdAt])
+}
+
+model SavedAddress {
+  id        String   @id
+  userId    String
+  label     String
+  city      String
+  line1     String
+  line2     String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isDefault])
+}
+
+model SavedPaymentCard {
+  id         String   @id
+  userId     String
+  brand      String
+  holderName String
+  last4      String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isDefault])
+}
+
+model Reward {
+  id             String      @id
+  title          String
+  description    String
+  pointsRequired Int
+  tier           LoyaltyTier
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model Recommendation {
+  id        String   @id
+  userId    String
+  productId String
+  label     String
+  reason    String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model ContentEntry {
+  id          String      @id
+  kind        ContentKind
+  slug        String
+  locale      String
+  title       String
+  summary     String
+  body        String
+  coverUrl    String
+  eyebrow     String
+  featured    Boolean     @default(false)
+  publishedAt DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([slug, locale])
+  @@index([kind, locale, publishedAt])
 }
 
 model TryOnSession {
@@ -174,34 +338,45 @@ model TryOnSession {
 }
 
 model Order {
-  id             String         @id
-  number         String         @unique
-  productId      String
-  variantId      String?
-  customerId     String
-  tryOnId        String?
-  status         OrderStatus
-  paymentStatus  PaymentStatus
-  deliveryMethod DeliveryMethod
-  paymentMethod  PaymentMethod
-  notes          String
-  shippingAddress String
-  contactPhone   String
-  scheduledDate  DateTime?
-  totalAmount    Int
-  currency       String         @default("KZT")
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                   String          @id
+  number               String          @unique
+  productId            String
+  variantId            String?
+  customerId           String
+  tryOnId              String?
+  status               OrderStatus
+  paymentStatus        PaymentStatus
+  deliveryMethod       DeliveryMethod
+  paymentMethod        PaymentMethod
+  priority             PriorityLevel   @default(standard)
+  notes                String
+  shippingAddress      String
+  contactPhone         String
+  scheduledDate        DateTime?
+  dueAt                DateTime?
+  totalAmount          Int
+  currency             String          @default("KZT")
+  slaHours             Int             @default(48)
+  returnRequested      Boolean         @default(false)
+  exchangeRequested    Boolean         @default(false)
+  cancellationRequested Boolean        @default(false)
+  qcChecklist          String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
-  product     Product          @relation(fields: [productId], references: [id])
-  variant     ProductVariant?  @relation(fields: [variantId], references: [id])
-  customer    User             @relation("CustomerOrders", fields: [customerId], references: [id])
-  tryOn       TryOnSession?    @relation(fields: [tryOnId], references: [id])
-  comments    OrderComment[]
-  attachments OrderAttachment[]
+  product       Product            @relation(fields: [productId], references: [id])
+  variant       ProductVariant?    @relation(fields: [variantId], references: [id])
+  customer      User               @relation("CustomerOrders", fields: [customerId], references: [id])
+  tryOn         TryOnSession?      @relation(fields: [tryOnId], references: [id])
+  comments      OrderComment[]
+  attachments   OrderAttachment[]
+  auditLogs     OrderAuditLog[]
+  tags          OrderTag[]
+  notifications Notification[]
 
   @@index([customerId, createdAt])
   @@index([status, createdAt])
+  @@index([priority, dueAt])
 }
 
 model OrderComment {
@@ -229,4 +404,49 @@ model OrderAttachment {
   author User  @relation("AttachmentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([orderId, createdAt])
+}
+
+model OrderAuditLog {
+  id        String   @id
+  orderId   String
+  actorId   String?
+  actorName String
+  actorRole Role
+  action    String
+  message   String
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+}
+
+model OrderTag {
+  id        String   @id
+  orderId   String
+  label     String
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+model Notification {
+  id         String           @id
+  userId     String?
+  roleTarget Role?
+  orderId    String?
+  type       NotificationType
+  title      String
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([roleTarget, createdAt])
 }
