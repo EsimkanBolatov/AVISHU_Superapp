@@ -136,6 +136,7 @@ export function ScreenShell({
   const language = useAppStore((state) => state.language);
   const user = useAppStore((state) => state.user);
   const cartItems = useAppStore((state) => state.cartItems);
+  const favorites = useAppStore((state) => state.favorites);
   const desktopHeaderCollapsed = useAppStore((state) => state.desktopHeaderCollapsed);
   const setDesktopHeaderCollapsed = useAppStore((state) => state.setDesktopHeaderCollapsed);
   const isOffline = useAppStore((state) => state.isOffline);
@@ -162,11 +163,11 @@ export function ScreenShell({
       });
 
       if (user.role === "client") {
-        items.push({
+          items.push({
           key: "saved",
           label: copy.saved,
           route: "/client/saved",
-          count: useAppStore.getState().favorites.length || undefined,
+          count: favorites.length || undefined,
         });
       }
 
@@ -189,7 +190,7 @@ export function ScreenShell({
     }
 
     return items;
-  }, [copy.admin, copy.cart, copy.dashboard, copy.home, copy.profile, copy.saved, copy.support, profileRoute, user, cartItems]);
+  }, [copy.admin, copy.cart, copy.dashboard, copy.home, copy.profile, copy.saved, copy.support, profileRoute, user, cartItems, favorites.length]);
 
   const bottomNavItems = useMemo(
     () =>
