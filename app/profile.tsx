@@ -1,6 +1,7 @@
 import { Redirect, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Image, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { LanguageSwitch } from "../src/components/LanguageSwitch";
 import { MonoButton } from "../src/components/MonoButton";
@@ -223,6 +224,11 @@ const EMPTY_CARD: SavedPaymentCardPayload = {
 export default function ProfileScreen() {
   const theme = useResolvedTheme();
   const { width } = useWindowDimensions();
+  
+  const insets = useSafeAreaInsets();
+  
+  const extraBottomPadding = Platform.OS === "web" ? 0 : insets.bottom + 80;
+
   const user = useAppStore((state) => state.user);
   const activeOrder = useAppStore((state) => state.activeOrder);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
@@ -289,12 +295,17 @@ export default function ProfileScreen() {
 
   return (
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      {/* 3. СЕНЬОРСКИЙ АПДЕЙТ: Применяем кроссплатформенный отступ. 
+          Берем 24 (дефолт из стилей) и прибавляем наш extraBottomPadding */}
+      <ScrollView 
+        contentContainerStyle={[
+          styles.container, 
+          { paddingBottom: 24 + extraBottomPadding }
+        ]} 
+        showsVerticalScrollIndicator={false}
+      >
         <Panel style={styles.identity}>
-          {/* Обновляем контейнеры в Panel */}
           <View style={[styles.identityGrid, isCompact && styles.identityGridCompact]}>
-            
-            {/* Добавили isCompact && styles.identityCopyCompact */}
             <View style={[styles.identityCopy, isCompact && styles.identityCopyCompact]}>
               <StatusPill label={`${user.role.toUpperCase()} / LIVE ACCOUNT`} tone="solid" />
               <Text style={[styles.name, isCompact && styles.nameCompact, { color: theme.colors.textPrimary }]}>
@@ -529,7 +540,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     gap: 18,
-    paddingBottom: 24,
   },
   identity: {
     gap: 14,
