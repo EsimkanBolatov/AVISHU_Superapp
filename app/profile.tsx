@@ -1,5 +1,5 @@
-import { router, Redirect } from "expo-router";
-import { useEffect, useState } from "react";
+import { Redirect, router } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { LanguageSwitch } from "../src/components/LanguageSwitch";
@@ -14,151 +14,210 @@ import { ThemeSwitch } from "../src/components/ThemeSwitch";
 import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
-import { AppLanguage } from "../src/types";
+import { AppLanguage, SavedAddressPayload, SavedPaymentCardPayload } from "../src/types";
 
 const COPY: Record<
   AppLanguage,
   {
     shellTitle: string;
     shellSubtitle: string;
-    liveAccount: string;
-    noPhone: string;
-    loyalty: string;
-    themeTitle: string;
-    themeSubtitle: string;
-    languageTitle: string;
-    languageSubtitle: string;
-    accountTitle: string;
+    accountState: string;
     accountSubtitle: string;
-    role: string;
-    tryOns: string;
+    loyalty: string;
+    points: string;
+    tier: string;
+    segment: string;
     editTitle: string;
     editSubtitle: string;
     name: string;
     phone: string;
-    address: string;
-    cardBrand: string;
-    cardHolder: string;
-    cardLast4: string;
-    save: string;
-    saving: string;
-    historyTitle: string;
-    historySubtitle: string;
-    historyEmpty: string;
-    source: string;
-    result: string;
+    saveProfile: string;
+    addressesTitle: string;
+    addressesSubtitle: string;
+    cardsTitle: string;
+    cardsSubtitle: string;
+    label: string;
+    city: string;
+    line1: string;
+    line2: string;
+    holder: string;
+    brand: string;
+    last4: string;
+    create: string;
+    update: string;
+    remove: string;
+    rewardsTitle: string;
+    rewardsSubtitle: string;
+    repeatOrdersTitle: string;
+    repeatOrdersSubtitle: string;
+    repeatOrder: string;
+    tryOnsTitle: string;
+    tryOnsSubtitle: string;
     trackerTitle: string;
     trackerSubtitle: string;
+    themeTitle: string;
+    themeSubtitle: string;
+    languageTitle: string;
+    languageSubtitle: string;
     signOut: string;
-    linkedCard: string;
-    noCard: string;
+    empty: string;
+    source: string;
+    result: string;
   }
 > = {
   ru: {
-    shellTitle: "ПРОФИЛЬ",
-    shellSubtitle: "АККАУНТ / НАСТРОЙКИ / ИСТОРИЯ",
-    liveAccount: "LIVE ACCOUNT / SESSION",
-    noPhone: "ТЕЛЕФОН НЕ ДОБАВЛЕН",
-    loyalty: "ЛОЯЛЬНОСТЬ",
-    themeTitle: "ТЕМА",
-    themeSubtitle: "Ручное переключение light и dark режима доступно на всем продукте.",
-    languageTitle: "ЯЗЫК",
-    languageSubtitle: "Русский, казахский и английский переключаются как постоянная пользовательская настройка.",
-    accountTitle: "СОСТОЯНИЕ АККАУНТА",
-    accountSubtitle: "Реальная авторизация, роль пользователя и рабочий слой профиля.",
-    role: "РОЛЬ",
-    tryOns: "TRY-ON СЕССИИ",
-    editTitle: "РЕДАКТИРОВАНИЕ ПРОФИЛЯ",
-    editSubtitle: "Контакты, адрес по умолчанию и данные привязанной карты для checkout-потока.",
-    name: "ИМЯ",
-    phone: "ТЕЛЕФОН",
-    address: "АДРЕС ПО УМОЛЧАНИЮ",
-    cardBrand: "БРЕНД КАРТЫ",
-    cardHolder: "ДЕРЖАТЕЛЬ КАРТЫ",
-    cardLast4: "ПОСЛЕДНИЕ 4 ЦИФРЫ",
-    save: "СОХРАНИТЬ ПРОФИЛЬ",
-    saving: "СОХРАНЕНИЕ...",
-    historyTitle: "ИСТОРИЯ AI TRY-ON",
-    historySubtitle: "Сохраненные fit-preview и generated results, связанные с клиентским профилем.",
-    historyEmpty: "История примерок пока пуста. Создай первый preview из карточки товара.",
-    source: "ИСХОДНИК",
-    result: "РЕЗУЛЬТАТ",
-    trackerTitle: "ТРЕКЕР ЗАКАЗА",
-    trackerSubtitle: "Статус клиента обновляется после действий франчайзи и производства в реальном времени.",
-    signOut: "ВЫЙТИ",
-    linkedCard: "ПРИВЯЗАННАЯ КАРТА",
-    noCard: "КАРТА НЕ УКАЗАНА",
+    shellTitle: "Профиль",
+    shellSubtitle: "ACCOUNT / SETTINGS / SAVED DATA",
+    accountState: "Состояние аккаунта",
+    accountSubtitle: "Реальная auth-модель, loyalty tier, customer segment и данные для CRM.",
+    loyalty: "Лояльность",
+    points: "Баллы",
+    tier: "Tier",
+    segment: "Сегмент",
+    editTitle: "Базовые данные",
+    editSubtitle: "Имя и телефон клиента как источник checkout и CRM-коммуникации.",
+    name: "Имя",
+    phone: "Телефон",
+    saveProfile: "Сохранить профиль",
+    addressesTitle: "Сохраненные адреса",
+    addressesSubtitle: "Адреса для checkout, доставки и repeat purchase flow.",
+    cardsTitle: "Сохраненные карты",
+    cardsSubtitle: "Платежные данные для ускоренного checkout.",
+    label: "Label",
+    city: "Город",
+    line1: "Адрес",
+    line2: "Комментарий",
+    holder: "Держатель",
+    brand: "Бренд",
+    last4: "Последние 4 цифры",
+    create: "Создать",
+    update: "Обновить",
+    remove: "Удалить",
+    rewardsTitle: "Rewards",
+    rewardsSubtitle: "Система loyalty rewards и привилегий по tier.",
+    repeatOrdersTitle: "Повтор заказа",
+    repeatOrdersSubtitle: "Delivered-заказы можно запускать повторно без ручного ввода checkout.",
+    repeatOrder: "Повторить заказ",
+    tryOnsTitle: "AI try-on history",
+    tryOnsSubtitle: "Сохраненные примерки и результат generation pipeline.",
+    trackerTitle: "Order tracker",
+    trackerSubtitle: "Live-статус активного заказа по operational chain.",
+    themeTitle: "Тема",
+    themeSubtitle: "Light / dark переключение сохраняется как пользовательское предпочтение.",
+    languageTitle: "Язык",
+    languageSubtitle: "ru / kk / en применяются ко всему продукту.",
+    signOut: "Выйти",
+    empty: "Пока пусто",
+    source: "Source",
+    result: "Result",
   },
   kk: {
-    shellTitle: "ПРОФИЛЬ",
-    shellSubtitle: "АККАУНТ / БАПТАУЛАР / ТАРИХ",
-    liveAccount: "LIVE ACCOUNT / SESSION",
-    noPhone: "ТЕЛЕФОН ҚОСЫЛМАҒАН",
-    loyalty: "ЛОЯЛДЫҚ",
-    themeTitle: "ТЕМА",
-    themeSubtitle: "Light және dark режимдерін қолмен ауыстыру бүкіл өнімде қолжетімді.",
-    languageTitle: "ТІЛ",
-    languageSubtitle: "Орыс, қазақ және ағылшын тілдері тұрақты пайдаланушы параметрі ретінде сақталады.",
-    accountTitle: "АККАУНТ КҮЙІ",
-    accountSubtitle: "Нақты авторизация, пайдаланушы рөлі және профильдің жұмыс қабаты.",
-    role: "РӨЛ",
-    tryOns: "TRY-ON СЕССИЯЛАРЫ",
-    editTitle: "ПРОФИЛЬДІ ӨҢДЕУ",
-    editSubtitle: "Checkout ағыны үшін байланыс, әдепкі мекенжай және карта деректері.",
-    name: "АТЫ",
-    phone: "ТЕЛЕФОН",
-    address: "ӘДЕПКІ МЕКЕНЖАЙ",
-    cardBrand: "КАРТА БРЕНДІ",
-    cardHolder: "КАРТА ИЕСІ",
-    cardLast4: "СОҢҒЫ 4 САН",
-    save: "ПРОФИЛЬДІ САҚТАУ",
-    saving: "САҚТАЛУДА...",
-    historyTitle: "AI TRY-ON ТАРИХЫ",
-    historySubtitle: "Клиент профиліне байланған сақталған preview және generated results.",
-    historyEmpty: "Try-on тарихы әзірге бос. Алғашқы preview-ды өнім бетінен жаса.",
-    source: "БАСТАПҚЫ",
-    result: "НӘТИЖЕ",
-    trackerTitle: "ТАПСЫРЫС ТРЕКЕРІ",
-    trackerSubtitle: "Клиент статусы франчайзи мен өндіріс әрекеттерінен кейін нақты уақытта жаңарады.",
-    signOut: "ШЫҒУ",
-    linkedCard: "БАЙЛАНҒАН КАРТА",
-    noCard: "КАРТА КӨРСЕТІЛМЕГЕН",
+    shellTitle: "Профиль",
+    shellSubtitle: "ACCOUNT / SETTINGS / SAVED DATA",
+    accountState: "Аккаунт күйі",
+    accountSubtitle: "Нақты auth-модель, loyalty tier, customer segment және CRM-ге арналған деректер.",
+    loyalty: "Лоялдылық",
+    points: "Ұпай",
+    tier: "Tier",
+    segment: "Сегмент",
+    editTitle: "Негізгі деректер",
+    editSubtitle: "Клиент аты мен телефоны checkout және CRM-коммуникация үшін қолданылады.",
+    name: "Аты",
+    phone: "Телефон",
+    saveProfile: "Профильді сақтау",
+    addressesTitle: "Сақталған мекенжайлар",
+    addressesSubtitle: "Checkout, жеткізу және repeat purchase үшін мекенжайлар.",
+    cardsTitle: "Сақталған карталар",
+    cardsSubtitle: "Жылдам checkout үшін төлем деректері.",
+    label: "Label",
+    city: "Қала",
+    line1: "Мекенжай",
+    line2: "Комментарий",
+    holder: "Иесі",
+    brand: "Бренд",
+    last4: "Соңғы 4 сан",
+    create: "Құру",
+    update: "Жаңарту",
+    remove: "Жою",
+    rewardsTitle: "Rewards",
+    rewardsSubtitle: "Tier бойынша loyalty rewards жүйесі.",
+    repeatOrdersTitle: "Repeat order",
+    repeatOrdersSubtitle: "Delivered тапсырыстарды қайта checkout енгізбей қайталауға болады.",
+    repeatOrder: "Тапсырысты қайталау",
+    tryOnsTitle: "AI try-on history",
+    tryOnsSubtitle: "Сақталған примерка және generation нәтижелері.",
+    trackerTitle: "Order tracker",
+    trackerSubtitle: "Operational chain бойынша актив тапсырыс күйі.",
+    themeTitle: "Тема",
+    themeSubtitle: "Light / dark таңдауы пайдаланушы параметрі ретінде сақталады.",
+    languageTitle: "Тіл",
+    languageSubtitle: "ru / kk / en бүкіл өнімге қолданылады.",
+    signOut: "Шығу",
+    empty: "Әзірге бос",
+    source: "Source",
+    result: "Result",
   },
   en: {
-    shellTitle: "PROFILE",
-    shellSubtitle: "ACCOUNT / SETTINGS / HISTORY",
-    liveAccount: "LIVE ACCOUNT / SESSION",
-    noPhone: "NO PHONE ADDED",
-    loyalty: "LOYALTY",
-    themeTitle: "THEME",
-    themeSubtitle: "Manual light and dark switching stays available across the entire product.",
-    languageTitle: "LANGUAGE",
-    languageSubtitle: "Russian, Kazakh and English persist as a profile-level user preference.",
-    accountTitle: "ACCOUNT STATE",
-    accountSubtitle: "Real auth, user role and the live profile layer.",
-    role: "ROLE",
-    tryOns: "TRY-ON SESSIONS",
-    editTitle: "PROFILE EDITING",
-    editSubtitle: "Contact details, default shipping address and linked card data for the checkout flow.",
-    name: "NAME",
-    phone: "PHONE",
-    address: "DEFAULT ADDRESS",
-    cardBrand: "CARD BRAND",
-    cardHolder: "CARD HOLDER",
-    cardLast4: "LAST 4 DIGITS",
-    save: "SAVE PROFILE",
-    saving: "SAVING...",
-    historyTitle: "AI TRY-ON HISTORY",
-    historySubtitle: "Saved fit previews and generated results tied to the client profile.",
-    historyEmpty: "No try-on history yet. Create your first preview from a product page.",
-    source: "SOURCE",
-    result: "RESULT",
-    trackerTitle: "ORDER TRACKER",
-    trackerSubtitle: "Client status updates in real time after franchisee and production actions.",
-    signOut: "SIGN OUT",
-    linkedCard: "LINKED CARD",
-    noCard: "NO CARD SET",
+    shellTitle: "Profile",
+    shellSubtitle: "ACCOUNT / SETTINGS / SAVED DATA",
+    accountState: "Account state",
+    accountSubtitle: "Real auth model, loyalty tier, client segment and CRM-ready profile data.",
+    loyalty: "Loyalty",
+    points: "Points",
+    tier: "Tier",
+    segment: "Segment",
+    editTitle: "Core identity",
+    editSubtitle: "Name and phone as the source of checkout and CRM communication.",
+    name: "Name",
+    phone: "Phone",
+    saveProfile: "Save profile",
+    addressesTitle: "Saved addresses",
+    addressesSubtitle: "Address book for checkout, delivery and repeat purchase flows.",
+    cardsTitle: "Saved cards",
+    cardsSubtitle: "Payment shortcuts for faster checkout.",
+    label: "Label",
+    city: "City",
+    line1: "Address",
+    line2: "Note",
+    holder: "Holder",
+    brand: "Brand",
+    last4: "Last 4 digits",
+    create: "Create",
+    update: "Update",
+    remove: "Remove",
+    rewardsTitle: "Rewards",
+    rewardsSubtitle: "Loyalty rewards and premium benefits by tier.",
+    repeatOrdersTitle: "Repeat order",
+    repeatOrdersSubtitle: "Delivered orders can be relaunched without rebuilding checkout.",
+    repeatOrder: "Repeat order",
+    tryOnsTitle: "AI try-on history",
+    tryOnsSubtitle: "Saved try-ons and generation results.",
+    trackerTitle: "Order tracker",
+    trackerSubtitle: "Live active-order status across the operational chain.",
+    themeTitle: "Theme",
+    themeSubtitle: "Light / dark switching persists as a user preference.",
+    languageTitle: "Language",
+    languageSubtitle: "ru / kk / en apply across the whole product.",
+    signOut: "Sign out",
+    empty: "Nothing here yet",
+    source: "Source",
+    result: "Result",
   },
+};
+
+const EMPTY_ADDRESS: SavedAddressPayload = {
+  label: "",
+  city: "",
+  line1: "",
+  line2: "",
+  isDefault: false,
+};
+
+const EMPTY_CARD: SavedPaymentCardPayload = {
+  brand: "",
+  holderName: "",
+  last4: "",
+  isDefault: false,
 };
 
 export default function ProfileScreen() {
@@ -167,19 +226,29 @@ export default function ProfileScreen() {
   const user = useAppStore((state) => state.user);
   const activeOrder = useAppStore((state) => state.activeOrder);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
+  const savedAddresses = useAppStore((state) => state.savedAddresses);
+  const savedCards = useAppStore((state) => state.savedCards);
+  const rewards = useAppStore((state) => state.rewards);
+  const orders = useAppStore((state) => state.orders);
   const logout = useAppStore((state) => state.logout);
   const updateProfile = useAppStore((state) => state.updateProfile);
+  const createAddress = useAppStore((state) => state.createAddress);
+  const updateAddress = useAppStore((state) => state.updateAddress);
+  const deleteAddress = useAppStore((state) => state.deleteAddress);
+  const createCard = useAppStore((state) => state.createCard);
+  const updateCard = useAppStore((state) => state.updateCard);
+  const deleteCard = useAppStore((state) => state.deleteCard);
+  const repeatOrder = useAppStore((state) => state.repeatOrder);
   const language = useAppStore((state) => state.language);
   const copy = COPY[language];
   const isCompact = width < 760;
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [defaultShippingAddress, setDefaultShippingAddress] = useState("");
-  const [paymentCardBrand, setPaymentCardBrand] = useState("");
-  const [paymentCardHolder, setPaymentCardHolder] = useState("");
-  const [paymentCardLast4, setPaymentCardLast4] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [addressDraft, setAddressDraft] = useState<SavedAddressPayload>(EMPTY_ADDRESS);
+  const [cardDraft, setCardDraft] = useState<SavedPaymentCardPayload>(EMPTY_CARD);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -188,19 +257,35 @@ export default function ProfileScreen() {
 
     setName(user.name);
     setPhone(user.phone ?? "");
-    setDefaultShippingAddress(user.defaultShippingAddress ?? "");
-    setPaymentCardBrand(user.paymentCardBrand ?? "");
-    setPaymentCardHolder(user.paymentCardHolder ?? "");
-    setPaymentCardLast4(user.paymentCardLast4 ?? "");
   }, [user]);
+
+  const deliveredOrders = useMemo(() => orders.filter((order) => order.status === "delivered").slice(0, 3), [orders]);
 
   if (!user) {
     return <Redirect href="/login" />;
   }
 
-  const linkedCard = user.paymentCardBrand && user.paymentCardLast4
-    ? `${user.paymentCardBrand.toUpperCase()} •••• ${user.paymentCardLast4}`
-    : copy.noCard;
+  async function handleSaveAddress() {
+    if (editingAddressId) {
+      await updateAddress(editingAddressId, addressDraft);
+    } else {
+      await createAddress(addressDraft);
+    }
+
+    setEditingAddressId(null);
+    setAddressDraft(EMPTY_ADDRESS);
+  }
+
+  async function handleSaveCard() {
+    if (editingCardId) {
+      await updateCard(editingCardId, cardDraft);
+    } else {
+      await createCard(cardDraft);
+    }
+
+    setEditingCardId(null);
+    setCardDraft(EMPTY_CARD);
+  }
 
   return (
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle}>
@@ -208,13 +293,11 @@ export default function ProfileScreen() {
         <Panel style={styles.identity}>
           <View style={[styles.identityGrid, isCompact && styles.identityGridCompact]}>
             <View style={styles.identityCopy}>
-              <StatusPill label={`${user.role.toUpperCase()} / ${copy.liveAccount}`} tone="solid" />
+              <StatusPill label={`${user.role.toUpperCase()} / LIVE ACCOUNT`} tone="solid" />
               <Text style={[styles.name, isCompact && styles.nameCompact, { color: theme.colors.textPrimary }]}>
                 {user.name.toUpperCase()}
               </Text>
-              <Text style={[styles.role, { color: theme.colors.textSecondary }]}>
-                {user.email} / {user.phone ?? copy.noPhone}
-              </Text>
+              <Text style={[styles.role, { color: theme.colors.textSecondary }]}>{user.email}</Text>
 
               <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary }]}>
                 <View
@@ -228,33 +311,24 @@ export default function ProfileScreen() {
                 />
               </View>
 
-              <Text style={[styles.progressText, { color: theme.colors.textMuted }]}>
-                {copy.loyalty} / {user.loyaltyProgress}% TO NEXT TIER
-              </Text>
-
               <View style={styles.identityMetaGrid}>
                 <View style={[styles.identityMeta, { borderColor: theme.colors.borderSoft }]}>
-                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.role}</Text>
-                  <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{user.role.toUpperCase()}</Text>
+                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.points}</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{user.loyaltyPoints}</Text>
                 </View>
                 <View style={[styles.identityMeta, { borderColor: theme.colors.borderSoft }]}>
-                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.tryOns}</Text>
-                  <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{tryOnSessions.length}</Text>
+                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.tier}</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{user.loyaltyTier.toUpperCase()}</Text>
                 </View>
                 <View style={[styles.identityMeta, { borderColor: theme.colors.borderSoft }]}>
-                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.linkedCard}</Text>
-                  <Text style={[styles.cardValue, { color: theme.colors.textPrimary }]}>{linkedCard}</Text>
+                  <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.segment}</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{user.segment}</Text>
                 </View>
               </View>
             </View>
 
             <View style={[styles.identityVisual, isCompact && styles.identityVisualCompact, { borderColor: theme.colors.borderSoft }]}>
-              <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
-              <Image
-                source={user.avatarUrl ? { uri: user.avatarUrl } : referenceTechJacket}
-                style={styles.visualImage}
-                resizeMode="cover"
-              />
+              <Image source={user.avatarUrl ? { uri: user.avatarUrl } : referenceTechJacket} style={styles.visualImage} resizeMode="cover" />
             </View>
           </View>
         </Panel>
@@ -271,15 +345,10 @@ export default function ProfileScreen() {
           </Panel>
 
           <Panel style={styles.settingsPanel}>
-            <SectionHeading title={copy.accountTitle} subtitle={copy.accountSubtitle} compact />
-            <View style={styles.metaBlock}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.role}</Text>
-              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{user.role.toUpperCase()}</Text>
-            </View>
-            <View style={styles.metaBlock}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.tryOns}</Text>
-              <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>{tryOnSessions.length}</Text>
-            </View>
+            <SectionHeading title={copy.accountState} subtitle={copy.accountSubtitle} compact />
+            <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>
+              {copy.loyalty}: {user.loyaltyProgress}% / {copy.points}: {user.loyaltyPoints}
+            </Text>
           </Panel>
         </View>
 
@@ -288,99 +357,147 @@ export default function ProfileScreen() {
           <View style={styles.editorGrid}>
             <MonoInput label={copy.name} value={name} onChangeText={setName} placeholder={copy.name} />
             <MonoInput label={copy.phone} value={phone} onChangeText={setPhone} placeholder="+7 ..." keyboardType="phone-pad" />
-            <MonoInput
-              label={copy.address}
-              value={defaultShippingAddress}
-              onChangeText={setDefaultShippingAddress}
-              placeholder={copy.address}
-              multiline
-            />
-            <MonoInput
-              label={copy.cardBrand}
-              value={paymentCardBrand}
-              onChangeText={setPaymentCardBrand}
-              placeholder="VISA / MASTERCARD / KASPI"
-            />
-            <MonoInput
-              label={copy.cardHolder}
-              value={paymentCardHolder}
-              onChangeText={setPaymentCardHolder}
-              placeholder={copy.cardHolder}
-            />
-            <MonoInput
-              label={copy.cardLast4}
-              value={paymentCardLast4}
-              onChangeText={(value) => setPaymentCardLast4(value.replace(/\D/g, "").slice(0, 4))}
-              keyboardType="number-pad"
-              placeholder="0000"
-            />
           </View>
-
-          <MonoButton
-            label={isSaving ? copy.saving : copy.save}
-            onPress={async () => {
-              setIsSaving(true);
-              try {
-                await updateProfile({
-                  name,
-                  phone,
-                  defaultShippingAddress,
-                  paymentCardBrand,
-                  paymentCardHolder,
-                  paymentCardLast4,
-                });
-              } finally {
-                setIsSaving(false);
-              }
-            }}
-          />
+          <MonoButton label={copy.saveProfile} onPress={() => updateProfile({ name, phone })} />
         </Panel>
 
-        {user.role === "client" ? (
-          <Panel>
-            <SectionHeading title={copy.historyTitle} subtitle={copy.historySubtitle} compact />
-            <View style={styles.tryOnGrid}>
-              {tryOnSessions.length ? (
-                tryOnSessions.map((session) => (
-                  <View
-                    key={session.id}
-                    style={[
-                      styles.tryOnCard,
-                      {
-                        borderColor: theme.colors.borderSoft,
-                        backgroundColor: theme.colors.surfaceSecondary,
-                      },
-                    ]}
-                  >
-                    <View style={styles.tryOnVisualRow}>
-                      <View style={[styles.tryOnVisual, isCompact && styles.tryOnVisualCompact]}>
-                        <Image source={{ uri: session.sourceImageUrl }} style={styles.tryOnImage} resizeMode="cover" />
-                        <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.source}</Text>
-                      </View>
-                      <View style={[styles.tryOnVisual, isCompact && styles.tryOnVisualCompact]}>
-                        <Image
-                          source={{ uri: session.resultImageUrl ?? session.sourceImageUrl }}
-                          style={styles.tryOnImage}
-                          resizeMode="cover"
-                        />
-                        <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.result}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.tryOnCopy}>
-                      <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>
-                        {session.status.toUpperCase()}
-                      </Text>
-                      <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
-                        {new Date(session.createdAt).toLocaleDateString(language)}
-                      </Text>
-                      <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>
-                        {session.notes}
-                      </Text>
+        <View style={styles.grid}>
+          <Panel style={styles.entityPanel}>
+            <SectionHeading title={copy.addressesTitle} subtitle={copy.addressesSubtitle} compact />
+            <MonoInput label={copy.label} value={addressDraft.label} onChangeText={(value) => setAddressDraft((current) => ({ ...current, label: value }))} />
+            <MonoInput label={copy.city} value={addressDraft.city} onChangeText={(value) => setAddressDraft((current) => ({ ...current, city: value }))} />
+            <MonoInput label={copy.line1} value={addressDraft.line1} onChangeText={(value) => setAddressDraft((current) => ({ ...current, line1: value }))} multiline />
+            <MonoInput label={copy.line2} value={addressDraft.line2 ?? ""} onChangeText={(value) => setAddressDraft((current) => ({ ...current, line2: value }))} />
+            <MonoButton label={editingAddressId ? copy.update : copy.create} onPress={handleSaveAddress} />
+            <View style={styles.stack}>
+              {savedAddresses.length ? (
+                savedAddresses.map((address) => (
+                  <View key={address.id} style={[styles.entityCard, { borderColor: theme.colors.borderSoft }]}>
+                    <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{address.label}</Text>
+                    <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>
+                      {address.city}, {address.line1}
+                    </Text>
+                    <View style={styles.row}>
+                      <MonoButton
+                        label={copy.update}
+                        variant="secondary"
+                        onPress={() => {
+                          setEditingAddressId(address.id);
+                          setAddressDraft({
+                            label: address.label,
+                            city: address.city,
+                            line1: address.line1,
+                            line2: address.line2 ?? "",
+                            isDefault: address.isDefault,
+                          });
+                        }}
+                      />
+                      <MonoButton label={copy.remove} variant="secondary" onPress={() => deleteAddress(address.id)} />
                     </View>
                   </View>
                 ))
               ) : (
-                <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>{copy.historyEmpty}</Text>
+                <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{copy.empty}</Text>
+              )}
+            </View>
+          </Panel>
+
+          <Panel style={styles.entityPanel}>
+            <SectionHeading title={copy.cardsTitle} subtitle={copy.cardsSubtitle} compact />
+            <MonoInput label={copy.brand} value={cardDraft.brand} onChangeText={(value) => setCardDraft((current) => ({ ...current, brand: value }))} />
+            <MonoInput label={copy.holder} value={cardDraft.holderName} onChangeText={(value) => setCardDraft((current) => ({ ...current, holderName: value }))} />
+            <MonoInput label={copy.last4} value={cardDraft.last4} onChangeText={(value) => setCardDraft((current) => ({ ...current, last4: value.replace(/\D/g, "").slice(0, 4) }))} keyboardType="number-pad" />
+            <MonoButton label={editingCardId ? copy.update : copy.create} onPress={handleSaveCard} />
+            <View style={styles.stack}>
+              {savedCards.length ? (
+                savedCards.map((card) => (
+                  <View key={card.id} style={[styles.entityCard, { borderColor: theme.colors.borderSoft }]}>
+                    <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{card.brand} •••• {card.last4}</Text>
+                    <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{card.holderName}</Text>
+                    <View style={styles.row}>
+                      <MonoButton
+                        label={copy.update}
+                        variant="secondary"
+                        onPress={() => {
+                          setEditingCardId(card.id);
+                          setCardDraft({
+                            brand: card.brand,
+                            holderName: card.holderName,
+                            last4: card.last4,
+                            isDefault: card.isDefault,
+                          });
+                        }}
+                      />
+                      <MonoButton label={copy.remove} variant="secondary" onPress={() => deleteCard(card.id)} />
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{copy.empty}</Text>
+              )}
+            </View>
+          </Panel>
+        </View>
+
+        <View style={styles.grid}>
+          <Panel style={styles.settingsPanel}>
+            <SectionHeading title={copy.rewardsTitle} subtitle={copy.rewardsSubtitle} compact />
+            <View style={styles.stack}>
+              {rewards.length ? (
+                rewards.map((reward) => (
+                  <View key={reward.id} style={[styles.entityCard, { borderColor: theme.colors.borderSoft }]}>
+                    <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{reward.title}</Text>
+                    <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{reward.description}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{copy.empty}</Text>
+              )}
+            </View>
+          </Panel>
+
+          <Panel style={styles.settingsPanel}>
+            <SectionHeading title={copy.repeatOrdersTitle} subtitle={copy.repeatOrdersSubtitle} compact />
+            <View style={styles.stack}>
+              {deliveredOrders.length ? (
+                deliveredOrders.map((order) => (
+                  <View key={order.id} style={[styles.entityCard, { borderColor: theme.colors.borderSoft }]}>
+                    <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{order.productName}</Text>
+                    <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{order.number} / {order.totalFormatted}</Text>
+                    <MonoButton label={copy.repeatOrder} onPress={() => repeatOrder(order.id)} />
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{copy.empty}</Text>
+              )}
+            </View>
+          </Panel>
+        </View>
+
+        {user.role === "client" ? (
+          <Panel>
+            <SectionHeading title={copy.tryOnsTitle} subtitle={copy.tryOnsSubtitle} compact />
+            <View style={styles.tryOnGrid}>
+              {tryOnSessions.length ? (
+                tryOnSessions.map((session) => (
+                  <View key={session.id} style={[styles.tryOnCard, { borderColor: theme.colors.borderSoft }]}>
+                    <View style={styles.tryOnVisualRow}>
+                      <View style={styles.tryOnVisual}>
+                        <Image source={{ uri: session.sourceImageUrl }} style={styles.tryOnImage} resizeMode="cover" />
+                        <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.source}</Text>
+                      </View>
+                      <View style={styles.tryOnVisual}>
+                        <Image source={{ uri: session.resultImageUrl ?? session.sourceImageUrl }} style={styles.tryOnImage} resizeMode="cover" />
+                        <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.result}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.tryOnCopy}>
+                      <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{session.notes}</Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>{copy.empty}</Text>
               )}
             </View>
           </Panel>
@@ -421,8 +538,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   identityGridCompact: {
-    flexDirection: "column-reverse", 
-    gap: 24,
+    flexDirection: "column-reverse",
   },
   identityCopy: {
     flex: 1,
@@ -451,11 +567,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
   },
-  progressText: {
-    fontFamily: "SpaceGrotesk_500Medium",
-    fontSize: 12,
-    letterSpacing: 1.2,
-  },
   identityMetaGrid: {
     gap: 10,
   },
@@ -467,29 +578,16 @@ const styles = StyleSheet.create({
   identityVisual: {
     flex: 0.9,
     minWidth: 280,
-    minHeight: 420,
+    minHeight: 360,
     borderWidth: 1,
     borderRadius: 26,
     overflow: "hidden",
   },
   identityVisualCompact: {
-    flex: 0,            
     minWidth: "100%",
-    minHeight: 0,       
-    aspectRatio: 1,     
-    borderRadius: 24,
-  },
-  visualGlow: {
-    position: "absolute",
-    top: -40,
-    right: -30,
-    width: 220,
-    height: 220,
-    borderRadius: 999,
-    opacity: 0.9,
+    minHeight: 260,
   },
   visualImage: {
-    position: "absolute",
     width: "100%",
     height: "100%",
   },
@@ -503,8 +601,39 @@ const styles = StyleSheet.create({
     minWidth: 280,
     gap: 12,
   },
-  metaBlock: {
-    gap: 4,
+  editorPanel: {
+    gap: 16,
+  },
+  editorGrid: {
+    gap: 12,
+  },
+  entityPanel: {
+    flex: 1,
+    minWidth: 320,
+    gap: 12,
+  },
+  stack: {
+    gap: 10,
+  },
+  entityCard: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+    gap: 8,
+  },
+  entityTitle: {
+    fontFamily: "Oswald_500Medium",
+    fontSize: 24,
+    letterSpacing: 0.8,
+  },
+  summaryText: {
+    fontFamily: "SpaceGrotesk_400Regular",
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
   },
   metaLabel: {
     fontFamily: "SpaceGrotesk_700Bold",
@@ -515,17 +644,6 @@ const styles = StyleSheet.create({
     fontFamily: "Oswald_500Medium",
     fontSize: 24,
     letterSpacing: 0.8,
-  },
-  cardValue: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 14,
-    letterSpacing: 1.1,
-  },
-  editorPanel: {
-    gap: 16,
-  },
-  editorGrid: {
-    gap: 12,
   },
   tryOnGrid: {
     gap: 12,
@@ -542,16 +660,11 @@ const styles = StyleSheet.create({
   tryOnVisual: {
     flex: 1,
     minWidth: 220,
-    aspectRatio: 4 / 5, 
-  },
-  tryOnVisualCompact: {
-    minWidth: "100%",
-    aspectRatio: 1,    
+    aspectRatio: 4 / 5,
   },
   tryOnImage: {
-    position: "absolute",
     width: "100%",
-    height: "100%",     
+    height: "100%",
   },
   tryOnMeta: {
     position: "absolute",
@@ -563,11 +676,5 @@ const styles = StyleSheet.create({
   },
   tryOnCopy: {
     padding: 16,
-    gap: 8,
-  },
-  tryOnText: {
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 14,
-    lineHeight: 22,
   },
 });

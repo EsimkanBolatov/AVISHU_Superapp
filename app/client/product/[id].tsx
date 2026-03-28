@@ -179,7 +179,7 @@ export default function ProductDetailScreen() {
     () =>
       (product?.relatedProductIds ?? [])
         .map((id) => products.find((item) => item.id === id))
-        .filter(Boolean)
+        .filter((item): item is (typeof products)[number] => Boolean(item))
         .slice(0, 4),
     [product?.relatedProductIds, products],
   );
@@ -187,7 +187,7 @@ export default function ProductDetailScreen() {
     () =>
       (product?.crossSellProductIds ?? [])
         .map((id) => products.find((item) => item.id === id))
-        .filter(Boolean)
+        .filter((item): item is (typeof products)[number] => Boolean(item))
         .slice(0, 4),
     [product?.crossSellProductIds, products],
   );

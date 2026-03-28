@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ChoiceChip } from "../../src/components/ChoiceChip";
 import { MonoButton } from "../../src/components/MonoButton";
@@ -8,13 +8,12 @@ import { Panel } from "../../src/components/Panel";
 import { ScreenShell } from "../../src/components/ScreenShell";
 import { SectionHeading } from "../../src/components/SectionHeading";
 import { StatusPill } from "../../src/components/StatusPill";
-import { referenceTechJacket } from "../../src/lib/brandArt";
 import { useResolvedTheme } from "../../src/lib/theme";
 import { useRequireRole } from "../../src/lib/useRequireRole";
 import { useAppStore } from "../../src/store/useAppStore";
-import { AppLanguage, ProductAvailability, ProductUpsertPayload } from "../../src/types";
+import { AppLanguage, ContentEntryUpsertPayload, ProductAvailability, ProductUpsertPayload } from "../../src/types";
 
-type AdminTab = "catalog" | "orders";
+type AdminTab = "catalog" | "orders" | "content";
 
 const EMPTY_PRODUCT_FORM: ProductUpsertPayload = {
   name: "",
@@ -48,176 +47,104 @@ const EMPTY_PRODUCT_FORM: ProductUpsertPayload = {
   crossSellProductIds: [],
 };
 
+const EMPTY_CONTENT_FORM: ContentEntryUpsertPayload = {
+  kind: "journal",
+  slug: "",
+  locale: "ru",
+  title: "",
+  summary: "",
+  body: "",
+  coverUrl: "",
+  eyebrow: "",
+  featured: false,
+};
+
 const COPY: Record<
   AppLanguage,
   {
     shellTitle: string;
     shellSubtitle: string;
-    webOnlyTitle: string;
-    webOnlySubtitle: string;
+    webOnly: string;
     catalog: string;
     orders: string;
-    leadBadge: string;
-    leadTitle: string;
-    leadSubtitle: string;
+    content: string;
+    create: string;
+    update: string;
+    reset: string;
+    remove: string;
+    saveContent: string;
+    metricsTitle: string;
+    metricsSubtitle: string;
     catalogTitle: string;
     catalogSubtitle: string;
+    contentTitle: string;
+    contentSubtitle: string;
     ordersTitle: string;
     ordersSubtitle: string;
-    createProduct: string;
-    editProduct: string;
-    reset: string;
-    deleteProduct: string;
-    updateProduct: string;
-    saveProduct: string;
-    price: string;
-    category: string;
-    cover: string;
-    gallery: string;
-    sizes: string;
-    style: string;
-    description: string;
-    composition: string;
-    fitNotes: string;
-    deliveryEstimate: string;
-    availability: string;
-    featured: string;
-    stock: string;
-    inStock: string;
-    preorder: string;
-    edit: string;
-    customer: string;
-    status: string;
-    payment: string;
-    delivery: string;
-    viewOnly: string;
   }
 > = {
   ru: {
-    shellTitle: "АДМИН",
-    shellSubtitle: "КАТАЛОГ / КОНТРОЛЬ ВИТРИНЫ / ОБЗОР ЗАКАЗОВ",
-    webOnlyTitle: "WEB-ONLY АДМИНКА",
-    webOnlySubtitle: "Эта панель предназначена строго для веб-версии персонала.",
-    catalog: "КАТАЛОГ",
-    orders: "ЗАКАЗЫ",
-    leadBadge: "ADMIN CONTROL / MERCHANDISING SURFACE",
-    leadTitle: "ОТДЕЛЬНАЯ ПАНЕЛЬ ДЛЯ КАТАЛОГА, КОНТЕНТА И ВИДИМОСТИ ЗАКАЗОВ",
-    leadSubtitle: "Admin управляет ассортиментом и качеством витрины. Операционный перевод заказов остается у франчайзи и производства.",
-    catalogTitle: "РЕДАКТОР КАТАЛОГА",
-    catalogSubtitle: "Создание, обновление и удаление карточек товаров с размерами, ценой и медиа.",
-    ordersTitle: "ОБЗОР СТАТУСОВ ЗАКАЗОВ",
-    ordersSubtitle: "Read-only обзор статусов и клиентских заказов без смешения с operational-role франчайзи.",
-    createProduct: "СОЗДАТЬ ТОВАР",
-    editProduct: "РЕДАКТИРОВАТЬ ТОВАР",
-    reset: "СБРОС",
-    deleteProduct: "УДАЛИТЬ",
-    updateProduct: "ОБНОВИТЬ ТОВАР",
-    saveProduct: "СОХРАНИТЬ ТОВАР",
-    price: "ЦЕНА",
-    category: "CATEGORY ID",
-    cover: "COVER URL",
-    gallery: "GALLERY URLS",
-    sizes: "РАЗМЕРЫ",
-    style: "STYLE TAGS",
-    description: "ОПИСАНИЕ",
-    composition: "СОСТАВ",
-    fitNotes: "ПОСАДКА",
-    deliveryEstimate: "СРОК ДОСТАВКИ",
-    availability: "НАЛИЧИЕ",
-    featured: "FEATURED",
-    stock: "СТОК",
-    inStock: "В НАЛИЧИИ",
-    preorder: "ПРЕДЗАКАЗ",
-    edit: "РЕДАКТ.",
-    customer: "КЛИЕНТ",
-    status: "СТАТУС",
-    payment: "ОПЛАТА",
-    delivery: "ДОСТАВКА",
-    viewOnly: "VIEW ONLY",
+    shellTitle: "Admin",
+    shellSubtitle: "CATALOG / CONTENT / ORDER VISIBILITY",
+    webOnly: "Эта панель доступна только в web-версии.",
+    catalog: "Каталог",
+    orders: "Заказы",
+    content: "Контент",
+    create: "Создать",
+    update: "Обновить",
+    reset: "Сброс",
+    remove: "Удалить",
+    saveContent: "Сохранить контент",
+    metricsTitle: "Коммерческий слой",
+    metricsSubtitle: "Admin управляет каталогом, контентом и видимостью воронки.",
+    catalogTitle: "Редактор каталога",
+    catalogSubtitle: "Product cards, metadata, premium facets и merchandising.",
+    contentTitle: "CMS content",
+    contentSubtitle: "Журнал, lookbook, campaign и collection story для ru / kk / en.",
+    ordersTitle: "Order visibility",
+    ordersSubtitle: "Read-only visibility по заказам и воронке.",
   },
   kk: {
-    shellTitle: "ӘКІМШІ",
-    shellSubtitle: "КАТАЛОГ / ВИТРИНА БАҚЫЛАУЫ / ТАПСЫРЫС ШОЛУЫ",
-    webOnlyTitle: "WEB-ONLY ӘКІМШІ ПАНЕЛІ",
-    webOnlySubtitle: "Бұл панель тек веб-нұсқадағы персоналға арналған.",
-    catalog: "КАТАЛОГ",
-    orders: "ТАПСЫРЫСТАР",
-    leadBadge: "ADMIN CONTROL / MERCHANDISING SURFACE",
-    leadTitle: "КАТАЛОГ, КОНТЕНТ ЖӘНЕ ТАПСЫРЫС КӨРІНІСІ ҮШІН БӨЛЕК ПАНЕЛЬ",
-    leadSubtitle: "Admin ассортимент пен витрина сапасын басқарады. Тапсырысты кезеңдерге жылжыту франчайзи мен өндірісте қалады.",
-    catalogTitle: "КАТАЛОГ РЕДАКТОРЫ",
-    catalogSubtitle: "Өлшемі, бағасы және медиасы бар өнім карталарын құру, жаңарту және жою.",
-    ordersTitle: "ТАПСЫРЫС СТАТУСТАРЫНЫҢ ШОЛУЫ",
-    ordersSubtitle: "Franchisee operational-role-ымен араластырмай, тапсырыс статустары мен клиенттік ағынның read-only көрінісі.",
-    createProduct: "ӨНІМ ҚҰРУ",
-    editProduct: "ӨНІМДІ ӨҢДЕУ",
-    reset: "ТАСТАУ",
-    deleteProduct: "ЖОЮ",
-    updateProduct: "ӨНІМДІ ЖАҢАРТУ",
-    saveProduct: "ӨНІМДІ САҚТАУ",
-    price: "БАҒА",
-    category: "CATEGORY ID",
-    cover: "COVER URL",
-    gallery: "GALLERY URLS",
-    sizes: "ӨЛШЕМДЕР",
-    style: "STYLE TAGS",
-    description: "СИПАТТАМА",
-    composition: "ҚҰРАМЫ",
-    fitNotes: "ОТЫРЫМЫ",
-    deliveryEstimate: "ЖЕТКІЗУ МЕРЗІМІ",
-    availability: "ҚОЛЖЕТІМДІЛІК",
-    featured: "FEATURED",
-    stock: "СТОК",
-    inStock: "ДАЙЫН",
-    preorder: "АЛДЫН АЛА ТАПСЫРЫС",
-    edit: "ӨҢДЕУ",
-    customer: "КЛИЕНТ",
-    status: "СТАТУС",
-    payment: "ТӨЛЕМ",
-    delivery: "ЖЕТКІЗУ",
-    viewOnly: "VIEW ONLY",
+    shellTitle: "Admin",
+    shellSubtitle: "CATALOG / CONTENT / ORDER VISIBILITY",
+    webOnly: "Бұл панель тек web-нұсқада қолжетімді.",
+    catalog: "Каталог",
+    orders: "Тапсырыстар",
+    content: "Контент",
+    create: "Құру",
+    update: "Жаңарту",
+    reset: "Тастау",
+    remove: "Жою",
+    saveContent: "Контентті сақтау",
+    metricsTitle: "Коммерциялық қабат",
+    metricsSubtitle: "Admin каталогты, контентті және funnel visibility-ді басқарады.",
+    catalogTitle: "Каталог редакторы",
+    catalogSubtitle: "Product cards, metadata, premium facets және merchandising.",
+    contentTitle: "CMS content",
+    contentSubtitle: "ru / kk / en үшін journal, lookbook, campaign және collection story.",
+    ordersTitle: "Order visibility",
+    ordersSubtitle: "Тапсырыстар мен funnel бойынша read-only көрініс.",
   },
   en: {
-    shellTitle: "ADMIN",
-    shellSubtitle: "CATALOG / STORE CONTROL / ORDER VISIBILITY",
-    webOnlyTitle: "WEB-ONLY ADMIN",
-    webOnlySubtitle: "This panel is intended strictly for the staff web experience.",
-    catalog: "CATALOG",
-    orders: "ORDERS",
-    leadBadge: "ADMIN CONTROL / MERCHANDISING SURFACE",
-    leadTitle: "A DISTINCT SURFACE FOR CATALOG, CONTENT AND ORDER VISIBILITY",
-    leadSubtitle: "Admin owns assortment and storefront quality. Operational order routing stays with franchisee and production.",
-    catalogTitle: "CATALOG EDITOR",
-    catalogSubtitle: "Create, update and remove product cards with sizing, price and media.",
-    ordersTitle: "ORDER STATUS OVERVIEW",
-    ordersSubtitle: "Read-only visibility into statuses and client orders without merging into the franchisee operational role.",
-    createProduct: "CREATE PRODUCT",
-    editProduct: "EDIT PRODUCT",
-    reset: "RESET",
-    deleteProduct: "DELETE PRODUCT",
-    updateProduct: "UPDATE PRODUCT",
-    saveProduct: "SAVE PRODUCT",
-    price: "PRICE",
-    category: "CATEGORY ID",
-    cover: "COVER URL",
-    gallery: "GALLERY URLS",
-    sizes: "SIZES",
-    style: "STYLE TAGS",
-    description: "DESCRIPTION",
-    composition: "COMPOSITION",
-    fitNotes: "FIT NOTES",
-    deliveryEstimate: "DELIVERY ESTIMATE",
-    availability: "AVAILABILITY",
-    featured: "FEATURED",
-    stock: "STOCK",
-    inStock: "IN STOCK",
-    preorder: "PREORDER",
-    edit: "EDIT",
-    customer: "CUSTOMER",
-    status: "STATUS",
-    payment: "PAYMENT",
-    delivery: "DELIVERY",
-    viewOnly: "VIEW ONLY",
+    shellTitle: "Admin",
+    shellSubtitle: "CATALOG / CONTENT / ORDER VISIBILITY",
+    webOnly: "This panel is available only in the web experience.",
+    catalog: "Catalog",
+    orders: "Orders",
+    content: "Content",
+    create: "Create",
+    update: "Update",
+    reset: "Reset",
+    remove: "Delete",
+    saveContent: "Save content",
+    metricsTitle: "Commerce layer",
+    metricsSubtitle: "Admin owns catalog, content and funnel visibility.",
+    catalogTitle: "Catalog editor",
+    catalogSubtitle: "Product cards, metadata, premium facets and merchandising.",
+    contentTitle: "CMS content",
+    contentSubtitle: "Journal, lookbook, campaign and collection story across ru / kk / en.",
+    ordersTitle: "Order visibility",
+    ordersSubtitle: "Read-only visibility into orders and funnel metrics.",
   },
 };
 
@@ -228,14 +155,22 @@ export default function AdminScreen() {
   const products = useAppStore((state) => state.products);
   const categories = useAppStore((state) => state.categories);
   const orders = useAppStore((state) => state.orders);
+  const metrics = useAppStore((state) => state.metrics);
+  const funnel = useAppStore((state) => state.funnel);
+  const contentEntries = useAppStore((state) => state.contentEntries);
   const createProduct = useAppStore((state) => state.createProduct);
   const updateProduct = useAppStore((state) => state.updateProduct);
   const deleteProduct = useAppStore((state) => state.deleteProduct);
+  const createContent = useAppStore((state) => state.createContent);
+  const updateContent = useAppStore((state) => state.updateContent);
+  const deleteContent = useAppStore((state) => state.deleteContent);
   const copy = COPY[language];
 
   const [tab, setTab] = useState<AdminTab>("catalog");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [productForm, setProductForm] = useState<ProductUpsertPayload>(EMPTY_PRODUCT_FORM);
+  const [contentForm, setContentForm] = useState<ContentEntryUpsertPayload>(EMPTY_CONTENT_FORM);
 
   const featuredProduct = useMemo(
     () => products.find((product) => product.id === selectedProductId) ?? products[0] ?? null,
@@ -249,16 +184,14 @@ export default function AdminScreen() {
   if (Platform.OS !== "web") {
     return (
       <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle} profileRoute="/profile">
-        <View style={styles.webOnlyWrap}>
-          <Panel style={styles.webOnlyPanel}>
-            <SectionHeading title={copy.webOnlyTitle} subtitle={copy.webOnlySubtitle} />
-          </Panel>
-        </View>
+        <Panel>
+          <SectionHeading title={copy.shellTitle} subtitle={copy.webOnly} compact />
+        </Panel>
       </ScreenShell>
     );
   }
 
-  const hydrateFormFromProduct = (productId: string) => {
+  function hydrateProduct(productId: string) {
     const product = products.find((item) => item.id === productId);
 
     if (!product) {
@@ -297,274 +230,234 @@ export default function AdminScreen() {
       relatedProductIds: product.relatedProductIds,
       crossSellProductIds: product.crossSellProductIds,
     });
-  };
+  }
 
-  const resetForm = () => {
+  function hydrateContent(contentId: string) {
+    const entry = contentEntries.find((item) => item.id === contentId);
+
+    if (!entry) {
+      return;
+    }
+
+    setSelectedContentId(entry.id);
+    setContentForm({
+      kind: entry.kind,
+      slug: entry.slug,
+      locale: entry.locale,
+      title: entry.title,
+      summary: entry.summary,
+      body: entry.body,
+      coverUrl: entry.coverUrl,
+      eyebrow: entry.eyebrow,
+      featured: entry.featured,
+    });
+  }
+
+  function resetProductForm() {
     setSelectedProductId(null);
     setProductForm(EMPTY_PRODUCT_FORM);
-  };
+  }
+
+  function resetContentForm() {
+    setSelectedContentId(null);
+    setContentForm(EMPTY_CONTENT_FORM);
+  }
 
   return (
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle} profileRoute="/profile">
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.leadPanel}>
-          <View style={styles.leadCopy}>
-            <StatusPill label={copy.leadBadge} tone="solid" />
-            <Text style={[styles.leadTitle, { color: theme.colors.textPrimary }]}>{copy.leadTitle}</Text>
-            <Text style={[styles.leadSubtitle, { color: theme.colors.textSecondary }]}>
-              {copy.leadSubtitle}
-            </Text>
-            <View style={styles.tabRow}>
-              <ChoiceChip label={copy.catalog} active={tab === "catalog"} onPress={() => setTab("catalog")} />
-              <ChoiceChip label={copy.orders} active={tab === "orders"} onPress={() => setTab("orders")} />
-            </View>
+          <StatusPill label="ADMIN CONTROL / MERCHANDISING SURFACE" tone="solid" />
+          <Text style={[styles.leadTitle, { color: theme.colors.textPrimary }]}>{copy.metricsTitle}</Text>
+          <Text style={[styles.leadSubtitle, { color: theme.colors.textSecondary }]}>{copy.metricsSubtitle}</Text>
+          <View style={styles.tabRow}>
+            {([
+              ["catalog", copy.catalog],
+              ["orders", copy.orders],
+              ["content", copy.content],
+            ] as const).map(([value, label]) => (
+              <ChoiceChip key={value} label={label} active={tab === value} onPress={() => setTab(value)} />
+            ))}
           </View>
 
-          <View style={[styles.leadVisual, { borderColor: theme.colors.borderSoft }]}>
-            <Image
-              source={featuredProduct?.media[0]?.url ? { uri: featuredProduct.media[0].url } : referenceTechJacket}
-              style={styles.leadImage}
-              resizeMode="cover"
-            />
+          <View style={styles.metricGrid}>
+            {[
+              ["Revenue", metrics.revenue],
+              ["Products", String(metrics.products)],
+              ["Favorites", String(metrics.favoriteCount)],
+              ["Content", String(metrics.contentEntries)],
+              ["Views", String(funnel.productViews)],
+              ["Paid", String(funnel.paidOrders)],
+            ].map(([label, value]) => (
+              <View key={label} style={[styles.metricCard, { borderColor: theme.colors.borderSoft }]}>
+                <Text style={[styles.metricLabel, { color: theme.colors.textMuted }]}>{label}</Text>
+                <Text style={[styles.metricValue, { color: theme.colors.textPrimary }]}>{value}</Text>
+              </View>
+            ))}
           </View>
         </Panel>
 
         {tab === "catalog" ? (
-          <View style={styles.catalogGrid}>
-            <Panel style={styles.catalogList}>
+          <View style={styles.grid}>
+            <Panel style={styles.sidePanel}>
               <SectionHeading title={copy.catalogTitle} subtitle={copy.catalogSubtitle} compact />
-              <View style={styles.productList}>
+              <View style={styles.stack}>
                 {products.map((product) => (
-                  <View
-                    key={product.id}
-                    style={[
-                      styles.productRow,
-                      {
-                        borderColor: selectedProductId === product.id ? theme.colors.border : theme.colors.borderSoft,
-                        backgroundColor:
-                          selectedProductId === product.id
-                            ? theme.colors.surfaceSecondary
-                            : theme.colors.surface,
-                      },
-                    ]}
-                  >
-                    <Image
-                      source={product.media[0]?.url ? { uri: product.media[0].url } : referenceTechJacket}
-                      style={styles.productThumb}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.productCopy}>
-                      <Text style={[styles.productTitle, { color: theme.colors.textPrimary }]}>
-                        {product.name}
-                      </Text>
-                      <Text style={[styles.productMeta, { color: theme.colors.textSecondary }]}>
-                        {product.categoryName} / {product.formattedPrice}
-                      </Text>
-                    </View>
-                    <MonoButton label={copy.edit} variant="secondary" onPress={() => hydrateFormFromProduct(product.id)} />
+                  <View key={product.id} style={[styles.entityCard, { borderColor: theme.colors.borderSoft }]}>
+                    <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{product.name}</Text>
+                    <Text style={[styles.entityBody, { color: theme.colors.textSecondary }]}>
+                      {product.categoryName} / {product.formattedPrice} / {product.collectionName}
+                    </Text>
+                    <MonoButton label={copy.update} variant="secondary" onPress={() => hydrateProduct(product.id)} />
                   </View>
                 ))}
               </View>
             </Panel>
 
-            <Panel style={styles.catalogEditor}>
-              <SectionHeading
-                title={selectedProductId ? copy.editProduct : copy.createProduct}
-                subtitle={copy.catalogSubtitle}
-                compact
-              />
-
+            <Panel style={styles.editorPanel}>
+              <SectionHeading title={selectedProductId ? copy.update : copy.create} subtitle={copy.catalogSubtitle} compact />
               <View style={styles.formGrid}>
-                <MonoInput
-                  label="NAME"
-                  value={productForm.name}
-                  onChangeText={(value) => setProductForm((current) => ({ ...current, name: value }))}
-                  placeholder="Storm Shell GEIM"
-                />
-                <MonoInput
-                  label="SUBTITLE"
-                  value={productForm.subtitle}
-                  onChangeText={(value) => setProductForm((current) => ({ ...current, subtitle: value }))}
-                  placeholder="Premium editorial subtitle"
-                />
-                <MonoInput
-                  label={copy.price}
-                  value={String(productForm.priceAmount || "")}
-                  onChangeText={(value) =>
-                    setProductForm((current) => ({ ...current, priceAmount: Number(value || 0) }))
-                  }
-                  keyboardType="numeric"
-                />
-                <MonoInput
-                  label={copy.category}
-                  value={productForm.categoryId}
-                  onChangeText={(value) => setProductForm((current) => ({ ...current, categoryId: value }))}
-                  placeholder={categories[0]?.id ?? "c-outerwear"}
-                />
-                <MonoInput
-                  label={copy.cover}
-                  value={productForm.coverUrl}
-                  onChangeText={(value) => setProductForm((current) => ({ ...current, coverUrl: value }))}
-                  placeholder="https://..."
-                />
-                <MonoInput
-                  label={copy.gallery}
-                  value={productForm.galleryUrls.join(", ")}
-                  onChangeText={(value) =>
-                    setProductForm((current) => ({
-                      ...current,
-                      galleryUrls: value
-                        .split(",")
-                        .map((item) => item.trim())
-                        .filter(Boolean),
-                    }))
-                  }
-                  placeholder="https://..., https://..."
-                />
-                <MonoInput
-                  label={copy.sizes}
-                  value={productForm.sizeLabels.join(", ")}
-                  onChangeText={(value) =>
-                    setProductForm((current) => ({
-                      ...current,
-                      sizeLabels: value
-                        .split(",")
-                        .map((item) => item.trim().toUpperCase())
-                        .filter(Boolean),
-                    }))
-                  }
-                />
-                <MonoInput
-                  label={copy.style}
-                  value={productForm.style.join(", ")}
-                  onChangeText={(value) =>
-                    setProductForm((current) => ({
-                      ...current,
-                      style: value
-                        .split(",")
-                        .map((item) => item.trim().toLowerCase())
-                        .filter(Boolean),
-                    }))
-                  }
-                />
-                <MonoInput
-                  label={copy.stock}
-                  value={String(productForm.defaultStock || 0)}
-                  onChangeText={(value) =>
-                    setProductForm((current) => ({ ...current, defaultStock: Number(value || 0) }))
-                  }
-                  keyboardType="numeric"
-                />
+                <MonoInput label="Name" value={productForm.name} onChangeText={(value) => setProductForm((current) => ({ ...current, name: value }))} />
+                <MonoInput label="Subtitle" value={productForm.subtitle} onChangeText={(value) => setProductForm((current) => ({ ...current, subtitle: value }))} />
+                <MonoInput label="Category ID" value={productForm.categoryId} onChangeText={(value) => setProductForm((current) => ({ ...current, categoryId: value }))} placeholder={categories[0]?.id ?? "c-outerwear"} />
+                <MonoInput label="Price" value={String(productForm.priceAmount || "")} onChangeText={(value) => setProductForm((current) => ({ ...current, priceAmount: Number(value || 0) }))} keyboardType="numeric" />
+                <MonoInput label="Cover URL" value={productForm.coverUrl} onChangeText={(value) => setProductForm((current) => ({ ...current, coverUrl: value }))} />
+                <MonoInput label="Gallery URLs" value={productForm.galleryUrls.join(", ")} onChangeText={(value) => setProductForm((current) => ({ ...current, galleryUrls: value.split(",").map((item) => item.trim()).filter(Boolean) }))} />
+                <MonoInput label="Sizes" value={productForm.sizeLabels.join(", ")} onChangeText={(value) => setProductForm((current) => ({ ...current, sizeLabels: value.split(",").map((item) => item.trim().toUpperCase()).filter(Boolean) }))} />
+                <MonoInput label="Style tags" value={productForm.style.join(", ")} onChangeText={(value) => setProductForm((current) => ({ ...current, style: value.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean) }))} />
+                <MonoInput label="Brand" value={productForm.brandName} onChangeText={(value) => setProductForm((current) => ({ ...current, brandName: value }))} />
+                <MonoInput label="Collection" value={productForm.collectionName} onChangeText={(value) => setProductForm((current) => ({ ...current, collectionName: value }))} />
+                <MonoInput label="Drop" value={productForm.dropName} onChangeText={(value) => setProductForm((current) => ({ ...current, dropName: value }))} />
+                <MonoInput label="Season" value={productForm.seasonLabel} onChangeText={(value) => setProductForm((current) => ({ ...current, seasonLabel: value }))} />
+                <MonoInput label="Colors" value={productForm.colors.join(", ")} onChangeText={(value) => setProductForm((current) => ({ ...current, colors: value.split(",").map((item) => item.trim()).filter(Boolean) }))} />
+                <MonoInput label="Materials" value={productForm.materials.join(", ")} onChangeText={(value) => setProductForm((current) => ({ ...current, materials: value.split(",").map((item) => item.trim()).filter(Boolean) }))} />
+                <MonoInput label="Fit" value={productForm.fitProfile} onChangeText={(value) => setProductForm((current) => ({ ...current, fitProfile: value }))} />
               </View>
 
-              <MonoInput
-                label={copy.description}
-                value={productForm.description}
-                onChangeText={(value) => setProductForm((current) => ({ ...current, description: value }))}
-                multiline
-              />
-              <MonoInput
-                label={copy.composition}
-                value={productForm.composition}
-                onChangeText={(value) => setProductForm((current) => ({ ...current, composition: value }))}
-              />
-              <MonoInput
-                label={copy.fitNotes}
-                value={productForm.fittingNotes}
-                onChangeText={(value) => setProductForm((current) => ({ ...current, fittingNotes: value }))}
-              />
-              <MonoInput
-                label={copy.deliveryEstimate}
-                value={productForm.deliveryEstimate}
-                onChangeText={(value) => setProductForm((current) => ({ ...current, deliveryEstimate: value }))}
-              />
+              <MonoInput label="Description" value={productForm.description} onChangeText={(value) => setProductForm((current) => ({ ...current, description: value }))} multiline />
+              <MonoInput label="Composition" value={productForm.composition} onChangeText={(value) => setProductForm((current) => ({ ...current, composition: value }))} multiline />
+              <MonoInput label="Fitting notes" value={productForm.fittingNotes} onChangeText={(value) => setProductForm((current) => ({ ...current, fittingNotes: value }))} multiline />
+              <MonoInput label="Delivery estimate" value={productForm.deliveryEstimate} onChangeText={(value) => setProductForm((current) => ({ ...current, deliveryEstimate: value }))} />
+              <MonoInput label="Care instructions" value={productForm.careInstructions} onChangeText={(value) => setProductForm((current) => ({ ...current, careInstructions: value }))} multiline />
+              <MonoInput label="Size guide" value={productForm.sizeGuide} onChangeText={(value) => setProductForm((current) => ({ ...current, sizeGuide: value }))} multiline />
+              <MonoInput label="Editorial story" value={productForm.editorialStory} onChangeText={(value) => setProductForm((current) => ({ ...current, editorialStory: value }))} multiline />
 
-              <View style={styles.choiceWrap}>
-                <Text style={[styles.choiceLabel, { color: theme.colors.textMuted }]}>{copy.availability}</Text>
-                <View style={styles.buttonRow}>
-                  {(["in_stock", "preorder"] as ProductAvailability[]).map((item) => (
-                    <ChoiceChip
-                      key={item}
-                      label={item === "in_stock" ? copy.inStock : copy.preorder}
-                      active={productForm.availability === item}
-                      onPress={() => setProductForm((current) => ({ ...current, availability: item }))}
-                    />
-                  ))}
-                  <ChoiceChip
-                    label={copy.featured}
-                    active={productForm.featured}
-                    onPress={() => setProductForm((current) => ({ ...current, featured: !current.featured }))}
-                  />
-                </View>
+              <View style={styles.choiceRow}>
+                {(["in_stock", "preorder"] as ProductAvailability[]).map((item) => (
+                  <ChoiceChip key={item} label={item.toUpperCase()} active={productForm.availability === item} onPress={() => setProductForm((current) => ({ ...current, availability: item }))} />
+                ))}
+                <ChoiceChip label="FEATURED" active={productForm.featured} onPress={() => setProductForm((current) => ({ ...current, featured: !current.featured }))} />
+                <ChoiceChip label="LIMITED" active={productForm.limitedEdition} onPress={() => setProductForm((current) => ({ ...current, limitedEdition: !current.limitedEdition }))} />
               </View>
 
-              <View style={styles.buttonRow}>
+              <View style={styles.row}>
                 <MonoButton
-                  label={selectedProductId ? copy.updateProduct : copy.saveProduct}
+                  label={selectedProductId ? copy.update : copy.create}
                   onPress={async () => {
                     if (selectedProductId) {
                       await updateProduct(selectedProductId, productForm);
                     } else {
                       await createProduct(productForm);
                     }
-                    resetForm();
+                    resetProductForm();
                   }}
                 />
-                <MonoButton label={copy.reset} variant="secondary" onPress={resetForm} />
+                <MonoButton label={copy.reset} variant="secondary" onPress={resetProductForm} />
                 {selectedProductId ? (
-                  <MonoButton
-                    label={copy.deleteProduct}
-                    variant="secondary"
-                    onPress={async () => {
-                      await deleteProduct(selectedProductId);
-                      resetForm();
-                    }}
-                  />
+                  <MonoButton label={copy.remove} variant="secondary" onPress={async () => {
+                    await deleteProduct(selectedProductId);
+                    resetProductForm();
+                  }} />
                 ) : null}
               </View>
+
+              {featuredProduct ? (
+                <View style={[styles.previewCard, { borderColor: theme.colors.borderSoft }]}>
+                  <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{featuredProduct.name}</Text>
+                  <Text style={[styles.entityBody, { color: theme.colors.textSecondary }]}>{featuredProduct.editorialStory}</Text>
+                </View>
+              ) : null}
             </Panel>
           </View>
         ) : null}
 
         {tab === "orders" ? (
-          <Panel style={styles.ordersPanel}>
+          <Panel style={styles.editorPanel}>
             <SectionHeading title={copy.ordersTitle} subtitle={copy.ordersSubtitle} compact />
-            <View style={styles.orderList}>
+            <View style={styles.stack}>
               {orders.map((order) => (
-                <View
-                  key={order.id}
-                  style={[
-                    styles.orderCard,
-                    {
-                      borderColor: theme.colors.borderSoft,
-                      backgroundColor: theme.colors.surfaceSecondary,
-                    },
-                  ]}
-                >
-                  <View style={styles.orderHead}>
-                    <View style={styles.orderHeadCopy}>
-                      <Text style={[styles.orderTitle, { color: theme.colors.textPrimary }]}>
-                        {order.number}
-                      </Text>
-                      <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
-                        {copy.customer} / {order.customerName}
-                      </Text>
-                      <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
-                        {copy.status} / {order.status.replaceAll("_", " ").toUpperCase()}
-                      </Text>
-                      <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
-                        {copy.payment} / {order.paymentMethod.toUpperCase()}
-                      </Text>
-                      <Text style={[styles.orderMeta, { color: theme.colors.textSecondary }]}>
-                        {copy.delivery} / {order.deliveryMethod.toUpperCase()}
-                      </Text>
-                    </View>
-                    <StatusPill label={copy.viewOnly} tone="ghost" />
-                  </View>
+                <View key={order.id} style={[styles.entityCard, { borderColor: theme.colors.borderSoft }]}>
+                  <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{order.number}</Text>
+                  <Text style={[styles.entityBody, { color: theme.colors.textSecondary }]}>
+                    {order.customerName} / {order.productName} / {order.status.toUpperCase()}
+                  </Text>
+                  <Text style={[styles.entityBody, { color: theme.colors.textSecondary }]}>
+                    {order.priority.toUpperCase()} / SLA {order.slaHours}h / {order.totalFormatted}
+                  </Text>
                 </View>
               ))}
             </View>
           </Panel>
+        ) : null}
+
+        {tab === "content" ? (
+          <View style={styles.grid}>
+            <Panel style={styles.sidePanel}>
+              <SectionHeading title={copy.contentTitle} subtitle={copy.contentSubtitle} compact />
+              <View style={styles.stack}>
+                {contentEntries.map((entry) => (
+                  <View key={entry.id} style={[styles.entityCard, { borderColor: theme.colors.borderSoft }]}>
+                    <Text style={[styles.entityTitle, { color: theme.colors.textPrimary }]}>{entry.title}</Text>
+                    <Text style={[styles.entityBody, { color: theme.colors.textSecondary }]}>
+                      {entry.kind} / {entry.locale} / {entry.slug}
+                    </Text>
+                    <MonoButton label={copy.update} variant="secondary" onPress={() => hydrateContent(entry.id)} />
+                  </View>
+                ))}
+              </View>
+            </Panel>
+
+            <Panel style={styles.editorPanel}>
+              <SectionHeading title={copy.contentTitle} subtitle={copy.contentSubtitle} compact />
+              <View style={styles.choiceRow}>
+                {(["journal", "lookbook", "campaign", "collection_story"] as const).map((kind) => (
+                  <ChoiceChip key={kind} label={kind.toUpperCase()} active={contentForm.kind === kind} onPress={() => setContentForm((current) => ({ ...current, kind }))} />
+                ))}
+              </View>
+              <View style={styles.choiceRow}>
+                {(["ru", "kk", "en"] as const).map((locale) => (
+                  <ChoiceChip key={locale} label={locale.toUpperCase()} active={contentForm.locale === locale} onPress={() => setContentForm((current) => ({ ...current, locale }))} />
+                ))}
+                <ChoiceChip label="FEATURED" active={contentForm.featured} onPress={() => setContentForm((current) => ({ ...current, featured: !current.featured }))} />
+              </View>
+              <MonoInput label="Slug" value={contentForm.slug} onChangeText={(value) => setContentForm((current) => ({ ...current, slug: value }))} />
+              <MonoInput label="Eyebrow" value={contentForm.eyebrow} onChangeText={(value) => setContentForm((current) => ({ ...current, eyebrow: value }))} />
+              <MonoInput label="Title" value={contentForm.title} onChangeText={(value) => setContentForm((current) => ({ ...current, title: value }))} />
+              <MonoInput label="Summary" value={contentForm.summary} onChangeText={(value) => setContentForm((current) => ({ ...current, summary: value }))} multiline />
+              <MonoInput label="Body" value={contentForm.body} onChangeText={(value) => setContentForm((current) => ({ ...current, body: value }))} multiline />
+              <MonoInput label="Cover URL" value={contentForm.coverUrl} onChangeText={(value) => setContentForm((current) => ({ ...current, coverUrl: value }))} />
+              <View style={styles.row}>
+                <MonoButton
+                  label={selectedContentId ? copy.update : copy.saveContent}
+                  onPress={async () => {
+                    if (selectedContentId) {
+                      await updateContent(selectedContentId, contentForm);
+                    } else {
+                      await createContent(contentForm);
+                    }
+                    resetContentForm();
+                  }}
+                />
+                <MonoButton label={copy.reset} variant="secondary" onPress={resetContentForm} />
+                {selectedContentId ? (
+                  <MonoButton label={copy.remove} variant="secondary" onPress={async () => {
+                    await deleteContent(selectedContentId);
+                    resetContentForm();
+                  }} />
+                ) : null}
+              </View>
+            </Panel>
+          </View>
         ) : null}
       </ScrollView>
     </ScreenShell>
@@ -576,147 +469,98 @@ const styles = StyleSheet.create({
     gap: 18,
     paddingBottom: 24,
   },
-  webOnlyWrap: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  webOnlyPanel: {
-    maxWidth: 660,
-    width: "100%",
-    alignSelf: "center",
-  },
   leadPanel: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 18,
-    alignItems: "stretch",
-  },
-  leadCopy: {
-    flex: 1,
-    minWidth: 340,
-    gap: 16,
+    gap: 14,
   },
   leadTitle: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 42,
-    lineHeight: 46,
-    letterSpacing: 1,
+    fontSize: 40,
+    lineHeight: 44,
+    letterSpacing: 0.8,
   },
   leadSubtitle: {
     fontFamily: "SpaceGrotesk_400Regular",
     fontSize: 15,
     lineHeight: 24,
-    maxWidth: 760,
+    maxWidth: 860,
   },
   tabRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },
-  leadVisual: {
-    flex: 0.9,
-    minWidth: 320,
-    minHeight: 340,
+  metricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  metricCard: {
+    minWidth: 160,
     borderWidth: 1,
-    borderRadius: 26,
-    overflow: "hidden",
+    borderRadius: 22,
+    padding: 14,
+    gap: 6,
   },
-  leadImage: {
-    width: "100%",
-    height: "100%",
+  metricLabel: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.4,
   },
-  catalogGrid: {
+  metricValue: {
+    fontFamily: "Oswald_500Medium",
+    fontSize: 28,
+    letterSpacing: 0.8,
+  },
+  grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 16,
     alignItems: "flex-start",
   },
-  catalogList: {
-    flex: 0.88,
+  sidePanel: {
+    flex: 0.8,
     minWidth: 320,
     gap: 14,
   },
-  productList: {
-    gap: 10,
+  editorPanel: {
+    flex: 1.2,
+    minWidth: 360,
+    gap: 14,
   },
-  productRow: {
-    borderWidth: 1,
-    borderRadius: 22,
-    padding: 12,
+  stack: {
     gap: 12,
-    flexDirection: "row",
-    alignItems: "center",
   },
-  productThumb: {
-    width: 82,
-    height: 82,
-    borderRadius: 18,
+  entityCard: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+    gap: 8,
   },
-  productCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  productTitle: {
+  entityTitle: {
     fontFamily: "Oswald_500Medium",
     fontSize: 24,
-    letterSpacing: 0.6,
+    letterSpacing: 0.7,
   },
-  productMeta: {
+  entityBody: {
     fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  catalogEditor: {
-    flex: 1.12,
-    minWidth: 340,
-    gap: 14,
+    fontSize: 14,
+    lineHeight: 22,
   },
   formGrid: {
     gap: 12,
   },
-  choiceWrap: {
-    gap: 10,
-  },
-  choiceLabel: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 10,
-    letterSpacing: 1.4,
-  },
-  buttonRow: {
+  row: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },
-  ordersPanel: {
-    gap: 16,
-  },
-  orderList: {
-    gap: 12,
-  },
-  orderCard: {
-    borderWidth: 1,
-    borderRadius: 24,
-    padding: 16,
-    gap: 14,
-  },
-  orderHead: {
+  choiceRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
     gap: 10,
-    alignItems: "center",
   },
-  orderHeadCopy: {
-    gap: 4,
-  },
-  orderTitle: {
-    fontFamily: "Oswald_500Medium",
-    fontSize: 28,
-    letterSpacing: 0.8,
-  },
-  orderMeta: {
-    fontFamily: "SpaceGrotesk_500Medium",
-    fontSize: 13,
-    lineHeight: 20,
+  previewCard: {
+    borderTopWidth: 1,
+    paddingTop: 12,
+    gap: 8,
   },
 });

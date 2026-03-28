@@ -47,6 +47,10 @@ export function ClientHomeExperience({
   categoryChips,
   availabilityChips,
   styleChips,
+  brandChips,
+  materialChips,
+  fitChips,
+  priceChips,
   collections,
   sections,
   searchValue,
@@ -160,6 +164,10 @@ export function ClientHomeExperience({
         <FilterGroup label={copy.categoryFilter} chips={categoryChips} />
         <FilterGroup label={copy.availabilityFilter} chips={availabilityChips} />
         <FilterGroup label={copy.styleFilter} chips={styleChips} />
+        <FilterGroup label={copy.brandFilter} chips={brandChips} />
+        <FilterGroup label={copy.materialFilter} chips={materialChips} />
+        <FilterGroup label={copy.fitFilter} chips={fitChips} />
+        <FilterGroup label={copy.priceFilter} chips={priceChips} />
       </Panel>
 
       <View style={styles.collectionHeader}>
