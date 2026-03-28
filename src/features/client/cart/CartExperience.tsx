@@ -13,6 +13,11 @@ import { useResolvedTheme } from "../../../lib/theme";
 const PAYMENT_METHODS = ["card", "kaspi", "transfer"];
 const DELIVERY_METHODS = ["pickup", "courier"];
 
+// 1. Расширяем тип, добавляя наш отступ
+type CartExperienceProps = CartViewModel & {
+  bottomPadding?: number;
+};
+
 export function CartExperience({
   language,
   copy,
@@ -36,7 +41,8 @@ export function CartExperience({
   onCheckout,
   onBackToCatalog,
   onOpenProfile,
-}: CartViewModel) {
+  bottomPadding = 0, // 2. Принимаем пропс с дефолтным значением
+}: CartExperienceProps) { // Используем наш новый тип
   const theme = useResolvedTheme();
 
   if (!cartLines.length) {
@@ -51,7 +57,14 @@ export function CartExperience({
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      // 3. Применяем отступ: базовые 24 + то, что пришло сверху (0 для веба, insets+80 для мобилок)
+      contentContainerStyle={[
+        styles.container, 
+        { paddingBottom: 24 + bottomPadding }
+      ]} 
+      showsVerticalScrollIndicator={false}
+    >
       <Panel style={styles.summaryPanel}>
         <StatusPill label={`${copy.total} / ${formatPrice(totalAmount, language)}`} tone="solid" />
         <Text style={[styles.summaryTitle, { color: theme.colors.textPrimary }]}>{copy.cartTitle}</Text>
@@ -160,7 +173,7 @@ export function CartExperience({
 const styles = StyleSheet.create({
   container: {
     gap: 14,
-    paddingBottom: 24,
+    // Я убрал paddingBottom: 24 отсюда, так как мы теперь задаем его динамически в самом компоненте
   },
   emptyWrap: {
     flex: 1,

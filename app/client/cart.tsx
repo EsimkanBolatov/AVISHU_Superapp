@@ -1,5 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenShell } from "../../src/components/ScreenShell";
 import { CartExperience } from "../../src/features/client/cart/CartExperience";
@@ -137,6 +139,9 @@ export default function CartScreen() {
   const placeOrder = useAppStore((state) => state.placeOrder);
   const copy = COPY[language];
 
+  const insets = useSafeAreaInsets();
+  const bottomNavPadding = Platform.OS === "web" ? 0 : insets.bottom + 80;
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("kaspi");
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("courier");
   const [shippingAddress, setShippingAddress] = useState(user?.defaultShippingAddress ?? "");
@@ -194,6 +199,7 @@ export default function CartScreen() {
         isSubmitting={isSubmitting}
         successMessage={successMessage}
         totalAmount={totalAmount}
+        bottomPadding={bottomNavPadding}
         onSetPaymentMethod={(value) => setPaymentMethod(value as PaymentMethod)}
         onSetDeliveryMethod={(value) => setDeliveryMethod(value as DeliveryMethod)}
         onSetShippingAddress={setShippingAddress}
