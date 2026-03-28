@@ -38,6 +38,11 @@ function FilterGroup({
   );
 }
 
+// 1. СЕНЬОРСКИЙ ТРЮК: Расширяем тип прямо здесь, добавляя наш bottomPadding
+type ClientHomeExperienceProps = ClientHomeViewModel & {
+  bottomPadding?: number; 
+};
+
 export function ClientHomeExperience({
   copy,
   featuredProduct,
@@ -60,11 +65,21 @@ export function ClientHomeExperience({
   onOpenProfile,
   onOpenCart,
   onClearFilters,
-}: ClientHomeViewModel) {
+  bottomPadding = 0, // 2. Принимаем новый пропс со значением по умолчанию
+}: ClientHomeExperienceProps) { // Используем наш расширенный тип
   const theme = useResolvedTheme();
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      // 3. ДОБАВЛЯЕМ ОТСТУП СЮДА. 
+      // Мы берем стили из styles.container и "докидываем" к ним paddingBottom
+      contentContainerStyle={[
+        styles.container, 
+        // Если bottomPadding передан, добавляем его к базовому отступу (22 из styles.container)
+        { paddingBottom: styles.container.paddingBottom + bottomPadding }
+      ]} 
+      showsVerticalScrollIndicator={false}
+    >
       {featuredProduct ? (
         <Panel style={styles.heroPanel}>
           <StatusPill label={copy.heroEyebrow} tone="solid" />
@@ -198,7 +213,8 @@ export function ClientHomeExperience({
 const styles = StyleSheet.create({
   container: {
     gap: 14,
-    paddingBottom: 22,
+    // Этот базовый отступ мы сохранили, но теперь к нему приплюсовывается высота таббара
+    paddingBottom: 22, 
   },
   heroPanel: {
     gap: 14,

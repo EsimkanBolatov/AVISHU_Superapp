@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenShell } from "../../src/components/ScreenShell";
 import { ClientHomeExperience } from "../../src/features/client/home/ClientHomeExperience";
@@ -203,6 +204,10 @@ export default function ClientScreen() {
   const cartItems = useAppStore((state) => state.cartItems);
   const copy = COPY[language];
 
+  const insets = useSafeAreaInsets();
+  // 80 - примерная высота твоего таббара, плюс системный отступ снизу
+  const bottomNavPadding = insets.bottom + 80;
+
   const [searchValue, setSearchValue] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedAvailability, setSelectedAvailability] = useState<"all" | ProductAvailability>("all");
@@ -282,6 +287,7 @@ export default function ClientScreen() {
         language={language}
         copy={copy}
         featuredProduct={featuredProduct}
+        bottomPadding={bottomNavPadding} 
         metrics={[
           { label: copy.metricProducts, value: `${effectiveProducts.length}` },
           { label: copy.metricTryOns, value: `${tryOnSessions.length}` },
