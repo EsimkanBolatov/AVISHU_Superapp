@@ -61,3 +61,4 @@ model Order {
   product  Product @relation(fields: [productId], references: [id])
   customer User    @relation(fields: [customerId], references: [id])
 }
+
