@@ -373,17 +373,17 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   analyticsGridCompact: {
-    flexDirection: "column-reverse", // На мобилке картинка товара встанет над текстом
+    flexDirection: "column-reverse", 
     gap: 16,
   },
   analyticsLead: {
     flex: 1,
-    minWidth: 280, // Уменьшено с 300
+    minWidth: 280, 
     gap: 14,
   },
   analyticsVisual: {
     flex: 0.9,
-    minWidth: 280, // Уменьшено с 300
+    minWidth: 280, 
     minHeight: 320,
     padding: 0,
     overflow: "hidden",
@@ -391,8 +391,8 @@ const styles = StyleSheet.create({
   analyticsVisualCompact: {
     flex: 0,
     minWidth: "100%",
-    minHeight: "auto",
-    aspectRatio: 4 / 3, // Горизонтальная резиновая картинка для мобилки
+    minHeight: 0,
+    aspectRatio: 4 / 3, 
     borderRadius: 24,
   },
   analyticsImage: {
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   analyticsTitleCompact: {
-    fontSize: 28, // Более компактный заголовок для телефонов
+    fontSize: 28, 
     lineHeight: 32,
   },
   analyticsCopy: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   column: {
     flex: 1,
-    minWidth: 280, // Безопасная минимальная ширина для узких экранов
+    minWidth: 280, 
     gap: 16,
   },
   columnList: {

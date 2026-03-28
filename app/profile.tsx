@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   identityGridCompact: {
-    flexDirection: "column-reverse", // Главный трюк: переворачиваем порядок, чтобы фото было сверху
+    flexDirection: "column-reverse", 
     gap: 24,
   },
   identityCopy: {
@@ -473,10 +473,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   identityVisualCompact: {
-    flex: 0,            // Сбрасываем десктопный флекс
+    flex: 0,            
     minWidth: "100%",
-    minHeight: "auto",  // Убираем жесткую высоту
-    aspectRatio: 1,     // Делаем красивый квадрат на мобилке
+    minHeight: 0,       
+    aspectRatio: 1,     
     borderRadius: 24,
   },
   visualGlow: {
@@ -541,15 +541,15 @@ const styles = StyleSheet.create({
   tryOnVisual: {
     flex: 1,
     minWidth: 220,
-    aspectRatio: 4 / 5, // Пропорция для десктопа вместо жесткой высоты
+    aspectRatio: 4 / 5, 
   },
   tryOnVisualCompact: {
     minWidth: "100%",
-    aspectRatio: 1,     // Квадратные картинки примерок на мобилке
+    aspectRatio: 1,    
   },
   tryOnImage: {
     width: "100%",
-    height: "100%",     // Картинка сама растянется по заданному aspectRatio
+    height: "100%",     
   },
   tryOnMeta: {
     position: "absolute",
