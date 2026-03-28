@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   heroVisual: {
-    minHeight: 340,
+    minHeight: 260,
     borderWidth: 1,
     borderRadius: 24,
     overflow: "hidden",
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
     borderWidth: 1,
     borderRadius: 18,
-    padding: 14,
+    padding: 12,
     gap: 8,
   },
   metricValue: {
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   collectionImage: {
     width: "100%",
-    height: 160,
+    height: 124,
     borderRadius: 14,
   },
   collectionCount: {

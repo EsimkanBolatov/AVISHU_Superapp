@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   visualPanel: {
-    minHeight: 360,
+    minHeight: 280,
     borderWidth: 1,
     borderRadius: 24,
     overflow: "hidden",

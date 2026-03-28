@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChoiceChip } from "../src/components/ChoiceChip";
@@ -145,12 +145,14 @@ const COPY: Record<
 
 export default function LoginScreen() {
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const login = useAppStore((state) => state.login);
   const register = useAppStore((state) => state.register);
   const isLoading = useAppStore((state) => state.isLoading);
   const user = useAppStore((state) => state.user);
   const copy = COPY[language];
+  const isCompact = width < 760;
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -195,19 +197,19 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.topbar}>
+        <View style={[styles.topbar, isCompact && styles.topbarCompact]}>
           <MonoButton label={copy.back} variant="secondary" onPress={() => router.replace("/")} />
           <View style={styles.topbarRight}>
-            <LanguageSwitch />
-            <ThemeSwitch />
+            <LanguageSwitch compact={isCompact} />
+            <ThemeSwitch compact={isCompact} />
           </View>
         </View>
 
-        <View style={styles.grid}>
+        <View style={[styles.grid, isCompact && styles.gridCompact]}>
           <Panel style={styles.leftPanel}>
             <StatusPill label={copy.badge} tone="solid" />
-            <Text style={[styles.brand, { color: theme.colors.textPrimary }]}>AVISHU</Text>
-            <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{copy.title}</Text>
+            <Text style={[styles.brand, isCompact && styles.brandCompact, { color: theme.colors.textPrimary }]}>AVISHU</Text>
+            <Text style={[styles.title, isCompact && styles.titleCompact, { color: theme.colors.textPrimary }]}>{copy.title}</Text>
             <Text style={[styles.copy, { color: theme.colors.textSecondary }]}>{copy.copy}</Text>
 
             <View style={styles.modeRow}>
@@ -279,16 +281,16 @@ export default function LoginScreen() {
             </View>
           </Panel>
 
-          <Panel style={styles.rightPanel}>
+          <Panel style={[styles.rightPanel, isCompact && styles.rightPanelCompact]}>
             <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
             <Text style={[styles.visualMeta, { color: theme.colors.textMuted }]}>{copy.visualMeta}</Text>
-            <Text style={[styles.visualTitle, { color: theme.colors.textPrimary }]}>
+            <Text style={[styles.visualTitle, isCompact && styles.visualTitleCompact, { color: theme.colors.textPrimary }]}>
               {copy.visualTitle}
             </Text>
 
-            <View style={[styles.visualFrame, { borderColor: theme.colors.borderSoft }]}>
+            <View style={[styles.visualFrame, isCompact && styles.visualFrameCompact, { borderColor: theme.colors.borderSoft }]}>
               <View style={[styles.visualInner, { backgroundColor: theme.colors.surfaceSecondary }]}>
-                <Image source={loginHeroArt} style={styles.imageFill} resizeMode="cover" />
+                <Image source={loginHeroArt} style={[styles.imageFill, isCompact && styles.imageFillCompact]} resizeMode="cover" />
                 <View
                   style={[
                     styles.visualVeil,

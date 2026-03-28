@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   itemImage: {
     width: "100%",
-    height: 240,
+    height: 180,
     borderRadius: 18,
   },
   itemCopy: {

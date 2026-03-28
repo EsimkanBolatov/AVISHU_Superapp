@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { LanguageSwitch } from "../src/components/LanguageSwitch";
 import { MonoButton } from "../src/components/MonoButton";
@@ -163,6 +163,7 @@ const COPY: Record<
 
 export default function ProfileScreen() {
   const theme = useResolvedTheme();
+  const { width } = useWindowDimensions();
   const user = useAppStore((state) => state.user);
   const activeOrder = useAppStore((state) => state.activeOrder);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
@@ -170,6 +171,7 @@ export default function ProfileScreen() {
   const updateProfile = useAppStore((state) => state.updateProfile);
   const language = useAppStore((state) => state.language);
   const copy = COPY[language];
+  const isCompact = width < 760;
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -205,10 +207,12 @@ export default function ProfileScreen() {
     <ScreenShell title={copy.shellTitle} subtitle={copy.shellSubtitle}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.identity}>
-          <View style={styles.identityGrid}>
+          <View style={[styles.identityGrid, isCompact && styles.identityGridCompact]}>
             <View style={styles.identityCopy}>
               <StatusPill label={`${user.role.toUpperCase()} / ${copy.liveAccount}`} tone="solid" />
-              <Text style={[styles.name, { color: theme.colors.textPrimary }]}>{user.name.toUpperCase()}</Text>
+              <Text style={[styles.name, isCompact && styles.nameCompact, { color: theme.colors.textPrimary }]}>
+                {user.name.toUpperCase()}
+              </Text>
               <Text style={[styles.role, { color: theme.colors.textSecondary }]}>
                 {user.email} / {user.phone ?? copy.noPhone}
               </Text>
@@ -245,7 +249,7 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View style={[styles.identityVisual, { borderColor: theme.colors.borderSoft }]}>
+            <View style={[styles.identityVisual, isCompact && styles.identityVisualCompact, { borderColor: theme.colors.borderSoft }]}>
               <View style={[styles.visualGlow, { backgroundColor: theme.colors.glow }]} />
               <Image
                 source={user.avatarUrl ? { uri: user.avatarUrl } : referenceTechJacket}
@@ -259,12 +263,12 @@ export default function ProfileScreen() {
         <View style={styles.grid}>
           <Panel style={styles.settingsPanel}>
             <SectionHeading title={copy.themeTitle} subtitle={copy.themeSubtitle} compact />
-            <ThemeSwitch />
+            <ThemeSwitch compact={isCompact} />
           </Panel>
 
           <Panel style={styles.settingsPanel}>
             <SectionHeading title={copy.languageTitle} subtitle={copy.languageSubtitle} compact />
-            <LanguageSwitch />
+            <LanguageSwitch compact={isCompact} />
           </Panel>
 
           <Panel style={styles.settingsPanel}>
@@ -350,14 +354,14 @@ export default function ProfileScreen() {
                     ]}
                   >
                     <View style={styles.tryOnVisualRow}>
-                      <View style={styles.tryOnVisual}>
-                        <Image source={{ uri: session.sourceImageUrl }} style={styles.tryOnImage} resizeMode="cover" />
+                      <View style={[styles.tryOnVisual, isCompact && styles.tryOnVisualCompact]}>
+                        <Image source={{ uri: session.sourceImageUrl }} style={[styles.tryOnImage, isCompact && styles.tryOnImageCompact]} resizeMode="cover" />
                         <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.source}</Text>
                       </View>
-                      <View style={styles.tryOnVisual}>
+                      <View style={[styles.tryOnVisual, isCompact && styles.tryOnVisualCompact]}>
                         <Image
                           source={{ uri: session.resultImageUrl ?? session.sourceImageUrl }}
-                          style={styles.tryOnImage}
+                          style={[styles.tryOnImage, isCompact && styles.tryOnImageCompact]}
                           resizeMode="cover"
                         />
                         <Text style={[styles.tryOnMeta, { color: theme.colors.textMuted }]}>{copy.result}</Text>
@@ -417,6 +421,9 @@ const styles = StyleSheet.create({
     gap: 18,
     alignItems: "stretch",
   },
+  identityGridCompact: {
+    gap: 14,
+  },
   identityCopy: {
     flex: 1,
     minWidth: 300,
@@ -426,6 +433,10 @@ const styles = StyleSheet.create({
     fontFamily: "Oswald_500Medium",
     fontSize: 46,
     letterSpacing: 1.8,
+  },
+  nameCompact: {
+    fontSize: 32,
+    letterSpacing: 1.1,
   },
   role: {
     fontFamily: "SpaceGrotesk_700Bold",
@@ -460,6 +471,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 26,
     overflow: "hidden",
+  },
+  identityVisualCompact: {
+    minWidth: "100%",
+    minHeight: 260,
   },
   visualGlow: {
     position: "absolute",
@@ -525,9 +540,16 @@ const styles = StyleSheet.create({
     minWidth: 220,
     minHeight: 240,
   },
+  tryOnVisualCompact: {
+    minWidth: "100%",
+    minHeight: 160,
+  },
   tryOnImage: {
     width: "100%",
     height: 240,
+  },
+  tryOnImageCompact: {
+    height: 160,
   },
   tryOnMeta: {
     position: "absolute",

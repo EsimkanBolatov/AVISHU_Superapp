@@ -1,5 +1,13 @@
-import { PropsWithChildren, useMemo } from "react";
-import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { PropsWithChildren, useEffect, useMemo, useState } from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, usePathname } from "expo-router";
 
@@ -19,34 +27,42 @@ const COPY: Record<
     admin: string;
     live: string;
     prototype: string;
+    menu: string;
+    close: string;
   }
 > = {
   ru: {
-    home: "ЛЕНДИНГ",
-    profile: "ПРОФИЛЬ",
-    dashboard: "КАБИНЕТ",
-    cart: "КОРЗИНА",
-    admin: "АДМИН",
-    live: "ЖИВОЙ",
-    prototype: "ПРОТОТИП / 2026",
+    home: "Лендинг",
+    profile: "Профиль",
+    dashboard: "Кабинет",
+    cart: "Корзина",
+    admin: "Админ",
+    live: "Живой",
+    prototype: "Прототип / 2026",
+    menu: "Меню",
+    close: "Свернуть",
   },
   kk: {
-    home: "ЛЕНДИНГ",
-    profile: "ПРОФИЛЬ",
-    dashboard: "КАБИНЕТ",
-    cart: "СЕБЕТ",
-    admin: "ӘКІМШІ",
-    live: "ТІРІ",
-    prototype: "ПРОТОТИП / 2026",
+    home: "Лендинг",
+    profile: "Профиль",
+    dashboard: "Кабинет",
+    cart: "Себет",
+    admin: "Әкімші",
+    live: "Тірі",
+    prototype: "Прототип / 2026",
+    menu: "Мәзір",
+    close: "Жинау",
   },
   en: {
-    home: "LANDING",
-    profile: "PROFILE",
-    dashboard: "DASHBOARD",
-    cart: "CART",
-    admin: "ADMIN",
-    live: "LIVE",
-    prototype: "PROTOTYPE / 2026",
+    home: "Landing",
+    profile: "Profile",
+    dashboard: "Dashboard",
+    cart: "Cart",
+    admin: "Admin",
+    live: "Live",
+    prototype: "Prototype / 2026",
+    menu: "Menu",
+    close: "Collapse",
   },
 };
 
@@ -88,6 +104,16 @@ export function ScreenShell({
   const cartItems = useAppStore((state) => state.cartItems);
   const copy = COPY[language];
   const isCompact = width < 760;
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isCompact) {
+      setMobileExpanded(false);
+      return;
+    }
+
+    setMobileExpanded(false);
+  }, [isCompact, pathname]);
 
   const shortcuts = useMemo(() => {
     const items: Array<{ key: string; label: string; route: string; count?: number }> = [
@@ -134,6 +160,8 @@ export function ScreenShell({
     return items;
   }, [copy.admin, copy.cart, copy.dashboard, copy.home, copy.profile, profileRoute, user, cartItems]);
 
+  const headerContentVisible = !isCompact || mobileExpanded;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.frame, isCompact && styles.frameCompact]}>
@@ -147,88 +175,158 @@ export function ScreenShell({
             },
           ]}
         >
-          <View style={styles.titleBlock}>
-            <Text style={[styles.brand, { color: theme.colors.textPrimary }]}>AVISHU</Text>
-            <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
-              {subtitle}
-            </Text>
-            <Text
-              style={[
-                styles.title,
-                isCompact && styles.titleCompact,
-                { color: theme.colors.textPrimary },
-              ]}
-            >
-              {title}
+          <View style={styles.topbarLead}>
+            <View style={styles.brandRow}>
+              <View style={styles.titleBlock}>
+                <Text style={[styles.brand, isCompact && styles.brandCompact, { color: theme.colors.textPrimary }]}>
+                  AVISHU
+                </Text>
+                <Text style={[styles.subtitle, isCompact && styles.subtitleCompact, { color: theme.colors.textMuted }]}>
+                  {subtitle}
+                </Text>
+                <Text
+                  style={[
+                    styles.title,
+                    isCompact && styles.titleCompact,
+                    { color: theme.colors.textPrimary },
+                  ]}
+                >
+                  {title}
+                </Text>
+              </View>
+
+              {isCompact ? (
+                <Pressable
+                  onPress={() => setMobileExpanded((current) => !current)}
+                  style={[
+                    styles.menuButton,
+                    {
+                      borderColor: theme.colors.borderSoft,
+                      backgroundColor: theme.colors.surfaceSecondary,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.menuLabel, { color: theme.colors.textPrimary }]}>
+                    {mobileExpanded ? copy.close : copy.menu}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            <Text style={[styles.metaText, isCompact && styles.metaTextCompact, { color: theme.colors.textMuted }]}>
+              {copy.live} / {copy.prototype}
             </Text>
           </View>
 
-          <View style={styles.topbarRight}>
-            <View style={styles.metaRow}>
-              <Text style={[styles.metaText, { color: theme.colors.textMuted }]}>
-                {copy.live} / {copy.prototype}
-              </Text>
-            </View>
+          {headerContentVisible ? (
+            <View style={[styles.topbarRight, isCompact && styles.topbarRightCompact]}>
+              <View style={styles.toggleRow}>
+                <LanguageSwitch compact={isCompact} />
+                <ThemeSwitch compact={isCompact} />
+              </View>
 
-            <View style={styles.toggleRow}>
-              <LanguageSwitch />
-              <ThemeSwitch />
-            </View>
+              {isCompact ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.shortcutRail}
+                >
+                  {shortcuts.map((item) => {
+                    const active = pathname === item.route;
 
-            <View style={styles.shortcutRow}>
-              {shortcuts.map((item) => {
-                const active = pathname === item.route;
-
-                return (
-                  <Pressable
-                    key={item.key}
-                    onPress={() => router.push(item.route as never)}
-                    style={[
-                      styles.shortcut,
-                      {
-                        borderColor: active ? theme.colors.border : theme.colors.borderSoft,
-                        backgroundColor: active
-                          ? theme.colors.surfaceSecondary
-                          : theme.colors.surface,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.shortcutLabel,
-                        {
-                          color: theme.colors.textPrimary,
-                        },
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                    {item.count ? (
-                      <View
+                    return (
+                      <Pressable
+                        key={item.key}
+                        onPress={() => router.push(item.route as never)}
                         style={[
-                          styles.count,
+                          styles.shortcut,
+                          isCompact && styles.shortcutCompact,
                           {
-                            backgroundColor: theme.colors.accent,
+                            borderColor: active ? theme.colors.border : theme.colors.borderSoft,
+                            backgroundColor: active
+                              ? theme.colors.surfaceSecondary
+                              : theme.colors.surface,
                           },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.countLabel,
-                            {
-                              color: theme.colors.accentContrast,
-                            },
-                          ]}
-                        >
-                          {item.count}
+                        <Text style={[styles.shortcutLabel, { color: theme.colors.textPrimary }]}>
+                          {item.label}
                         </Text>
-                      </View>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
+                        {item.count ? (
+                          <View
+                            style={[
+                              styles.count,
+                              {
+                                backgroundColor: theme.colors.accent,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.countLabel,
+                                {
+                                  color: theme.colors.accentContrast,
+                                },
+                              ]}
+                            >
+                              {item.count}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              ) : (
+                <View style={styles.shortcutRow}>
+                  {shortcuts.map((item) => {
+                    const active = pathname === item.route;
+
+                    return (
+                      <Pressable
+                        key={item.key}
+                        onPress={() => router.push(item.route as never)}
+                        style={[
+                          styles.shortcut,
+                          {
+                            borderColor: active ? theme.colors.border : theme.colors.borderSoft,
+                            backgroundColor: active
+                              ? theme.colors.surfaceSecondary
+                              : theme.colors.surface,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.shortcutLabel, { color: theme.colors.textPrimary }]}>
+                          {item.label}
+                        </Text>
+                        {item.count ? (
+                          <View
+                            style={[
+                              styles.count,
+                              {
+                                backgroundColor: theme.colors.accent,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.countLabel,
+                                {
+                                  color: theme.colors.accentContrast,
+                                },
+                              ]}
+                            >
+                              {item.count}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
             </View>
-          </View>
+          ) : null}
         </View>
 
         <View style={styles.content}>{children}</View>
@@ -249,42 +347,55 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   frameCompact: {
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 14,
-    gap: 14,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 12,
   },
   topbar: {
     borderWidth: 1,
     borderRadius: 32,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
     gap: 18,
-    alignItems: "flex-start",
   },
   topbarCompact: {
-    borderRadius: 24,
+    borderRadius: 22,
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 14,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  topbarLead: {
+    gap: 8,
+  },
+  brandRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "flex-start",
   },
   titleBlock: {
     flex: 1,
-    minWidth: 280,
-    gap: 6,
+    minWidth: 0,
+    gap: 4,
   },
   brand: {
     fontFamily: "Oswald_500Medium",
     fontSize: 34,
     letterSpacing: 2.4,
   },
+  brandCompact: {
+    fontSize: 28,
+    letterSpacing: 2,
+  },
   subtitle: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
-    letterSpacing: 1.9,
+    letterSpacing: 1.8,
+  },
+  subtitleCompact: {
+    fontSize: 9,
+    letterSpacing: 1.2,
   },
   title: {
     fontFamily: "Oswald_500Medium",
@@ -293,29 +404,46 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
   },
   titleCompact: {
-    fontSize: 40,
-    lineHeight: 42,
-    letterSpacing: 1.1,
-  },
-  topbarRight: {
-    flex: 1,
-    minWidth: 320,
-    gap: 12,
-    alignItems: "flex-end",
-  },
-  metaRow: {
-    minHeight: 22,
-    justifyContent: "center",
+    fontSize: 30,
+    lineHeight: 32,
+    letterSpacing: 0.7,
   },
   metaText: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
-    letterSpacing: 1.7,
+    letterSpacing: 1.6,
+    alignSelf: "flex-end",
+  },
+  metaTextCompact: {
+    alignSelf: "flex-start",
+    fontSize: 9,
+    letterSpacing: 1.2,
+  },
+  menuButton: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 88,
+    alignItems: "center",
+  },
+  menuLabel: {
+    fontFamily: "SpaceGrotesk_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.3,
+  },
+  topbarRight: {
+    gap: 12,
+    alignItems: "flex-end",
+  },
+  topbarRightCompact: {
+    alignItems: "stretch",
+    gap: 10,
   },
   toggleRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 8,
     justifyContent: "flex-end",
   },
   shortcutRow: {
@@ -324,8 +452,12 @@ const styles = StyleSheet.create({
     gap: 10,
     justifyContent: "flex-end",
   },
+  shortcutRail: {
+    gap: 8,
+    paddingRight: 8,
+  },
   shortcut: {
-    minHeight: 46,
+    minHeight: 44,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 16,
@@ -334,10 +466,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
+  shortcutCompact: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
   shortcutLabel: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
-    letterSpacing: 1.5,
+    letterSpacing: 1.4,
   },
   count: {
     minWidth: 22,

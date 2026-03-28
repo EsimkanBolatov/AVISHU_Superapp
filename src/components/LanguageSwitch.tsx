@@ -4,7 +4,11 @@ import { useResolvedTheme } from "../lib/theme";
 import { useAppStore } from "../store/useAppStore";
 import { AppLanguage } from "../types";
 
-export function LanguageSwitch() {
+export function LanguageSwitch({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const theme = useResolvedTheme();
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
@@ -30,6 +34,7 @@ export function LanguageSwitch() {
             onPress={() => setLanguage(option)}
             style={[
               styles.item,
+              compact && styles.itemCompact,
               active && {
                 backgroundColor: theme.colors.accent,
               },
@@ -38,6 +43,7 @@ export function LanguageSwitch() {
             <Text
               style={[
                 styles.label,
+                compact && styles.labelCompact,
                 {
                   color: active ? theme.colors.accentContrast : theme.colors.textSecondary,
                 },
@@ -67,9 +73,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 999,
   },
+  itemCompact: {
+    minWidth: 44,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
   label: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
     letterSpacing: 1.4,
+  },
+  labelCompact: {
+    fontSize: 9,
+    letterSpacing: 1.1,
   },
 });

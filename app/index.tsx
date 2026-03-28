@@ -1,5 +1,5 @@
 import { Redirect, router } from "expo-router";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LanguageSwitch } from "../src/components/LanguageSwitch";
@@ -101,6 +101,8 @@ export default function IndexScreen() {
   const language = useAppStore((state) => state.language);
   const theme = useResolvedTheme();
   const copy = COPY[language];
+  const { width } = useWindowDimensions();
+  const isCompact = width < 760;
 
   if (user?.role === "client") {
     return <Redirect href="/client" />;
@@ -121,23 +123,23 @@ export default function IndexScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.topbar}>
+        <View style={[styles.topbar, isCompact && styles.topbarCompact]}>
           <View style={styles.topbarLeft}>
-            <Text style={[styles.logo, { color: theme.colors.textPrimary }]}>AVISHU</Text>
-            <Text style={[styles.topbarMeta, { color: theme.colors.textMuted }]}>{copy.meta}</Text>
+            <Text style={[styles.logo, isCompact && styles.logoCompact, { color: theme.colors.textPrimary }]}>AVISHU</Text>
+            <Text style={[styles.topbarMeta, isCompact && styles.topbarMetaCompact, { color: theme.colors.textMuted }]}>{copy.meta}</Text>
           </View>
           <View style={styles.topbarRight}>
-            <LanguageSwitch />
-            <ThemeSwitch />
+            <LanguageSwitch compact={isCompact} />
+            <ThemeSwitch compact={isCompact} />
             <StatusPill label="LIVE PROTOTYPE / 2026" tone="ghost" />
           </View>
         </View>
 
-        <View style={styles.hero}>
+        <View style={[styles.hero, isCompact && styles.heroCompact]}>
           <View style={styles.heroLeft}>
             <StatusPill label={copy.badge} tone="solid" />
             <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>{copy.kicker}</Text>
-            <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>{copy.title}</Text>
+            <Text style={[styles.heroTitle, isCompact && styles.heroTitleCompact, { color: theme.colors.textPrimary }]}>{copy.title}</Text>
             <Text style={[styles.heroCopy, { color: theme.colors.textSecondary }]}>{copy.body}</Text>
 
             <View style={styles.heroActions}>
@@ -154,7 +156,7 @@ export default function IndexScreen() {
             </View>
           </View>
 
-          <Panel style={styles.heroVisual}>
+          <Panel style={[styles.heroVisual, isCompact && styles.heroVisualCompact]}>
             <View
               style={[
                 styles.heroGlow,
@@ -164,7 +166,7 @@ export default function IndexScreen() {
               ]}
             />
             <View style={[styles.imageMask, { backgroundColor: theme.colors.surfaceSecondary }]}>
-              <Image source={landingHeroArt} style={styles.heroImage} resizeMode="cover" />
+              <Image source={landingHeroArt} style={[styles.heroImage, isCompact && styles.heroImageCompact]} resizeMode="cover" />
               <View style={[styles.imageVeil, { backgroundColor: theme.colors.backgroundSecondary }]} />
             </View>
             <View style={styles.heroOverlayTop}>
@@ -209,6 +211,9 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: "center",
   },
+  topbarCompact: {
+    alignItems: "flex-start",
+  },
   topbarLeft: {
     gap: 4,
   },
@@ -223,16 +228,27 @@ const styles = StyleSheet.create({
     fontSize: 28,
     letterSpacing: 2.4,
   },
+  logoCompact: {
+    fontSize: 24,
+    letterSpacing: 1.8,
+  },
   topbarMeta: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
     letterSpacing: 1.6,
+  },
+  topbarMetaCompact: {
+    fontSize: 9,
+    letterSpacing: 1.2,
   },
   hero: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 18,
     alignItems: "stretch",
+  },
+  heroCompact: {
+    gap: 14,
   },
   heroLeft: {
     flex: 1.05,
@@ -251,6 +267,10 @@ const styles = StyleSheet.create({
     fontSize: 58,
     lineHeight: 62,
     letterSpacing: 0.6,
+  },
+  heroTitleCompact: {
+    fontSize: 38,
+    lineHeight: 40,
   },
   heroCopy: {
     maxWidth: 620,
@@ -285,6 +305,10 @@ const styles = StyleSheet.create({
     padding: 0,
     overflow: "hidden",
   },
+  heroVisualCompact: {
+    minWidth: "100%",
+    minHeight: 360,
+  },
   heroGlow: {
     position: "absolute",
     top: -80,
@@ -306,6 +330,13 @@ const styles = StyleSheet.create({
     width: 1180,
     height: 880,
     transform: [{ scale: 1.08 }],
+  },
+  heroImageCompact: {
+    right: -220,
+    bottom: -20,
+    width: 760,
+    height: 520,
+    transform: [{ scale: 1 }],
   },
   imageVeil: {
     position: "absolute",
