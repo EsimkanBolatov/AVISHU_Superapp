@@ -11,6 +11,7 @@ import { ProductDetailViewModel } from "../view-models";
 import { useResolvedTheme } from "../../../lib/theme";
 
 export function ProductDetailExperience({
+  language,
   copy,
   product,
   activeMediaUrl,
