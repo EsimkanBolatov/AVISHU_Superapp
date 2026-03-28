@@ -32,7 +32,7 @@ function hashPassword(password: string) {
   return createHash("sha256").update(password).digest("hex");
 }
 
-const monochromeParams = "auto=format&fit=crop&w=1200&q=80&sat=-100&exp=6";
+const monochromeParams = "auto=format&fit=crop&w=1200&q=80&exp=6";
 
 const imagePools = {
   outerwear: [
@@ -626,14 +626,18 @@ async function main() {
   });
 
   const productMediaRows = products.flatMap((product) =>
-    product.media.map((url, index) => ({
-      id: `pm-${product.id.replace("p-", "")}-${index + 1}`,
-      productId: product.id,
-      url,
-      alt: `${product.name} ${index === 0 ? "cover" : "gallery"} image`,
-      kind: index === 0 ? "cover" : "gallery",
-      sortOrder: index,
-    })),
+    product.media.map((url, index) => {
+      const mediaKind = (index === 0 ? "cover" : "gallery") as "cover" | "gallery";
+
+      return {
+        id: `pm-${product.id.replace("p-", "")}-${index + 1}`,
+        productId: product.id,
+        url,
+        alt: `${product.name} ${mediaKind} image`,
+        kind: mediaKind, 
+        sortOrder: index,
+      };
+    })
   );
 
   const productVariantRows = products.flatMap((product, productIndex) =>

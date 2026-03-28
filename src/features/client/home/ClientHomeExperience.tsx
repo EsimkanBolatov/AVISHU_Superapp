@@ -195,8 +195,8 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 40,
-    lineHeight: 42,
+    fontSize: 32, 
+    lineHeight: 36, 
     letterSpacing: 1,
   },
   heroText: {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   heroVisual: {
-    minHeight: 260,
+    minHeight: 240, 
     borderWidth: 1,
     borderRadius: 24,
     overflow: "hidden",
@@ -305,6 +305,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   listBlock: {
+    flexDirection: "row", 
+    flexWrap: "wrap",     
+    justifyContent: "space-between",
     gap: 12,
   },
 });
