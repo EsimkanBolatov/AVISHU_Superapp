@@ -396,6 +396,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   analyticsImage: {
+    position: "absolute", 
     width: "100%",
     height: "100%",
   },

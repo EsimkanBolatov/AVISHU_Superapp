@@ -489,6 +489,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   visualImage: {
+    position: "absolute",
     width: "100%",
     height: "100%",
   },
@@ -548,6 +549,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,    
   },
   tryOnImage: {
+    position: "absolute",
     width: "100%",
     height: "100%",     
   },
