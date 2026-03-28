@@ -32,6 +32,20 @@ const EMPTY_PRODUCT_FORM: ProductUpsertPayload = {
   sizeLabels: ["S", "M", "L"],
   style: ["technical"],
   defaultStock: 3,
+  brandName: "AVISHU",
+  collectionName: "Core",
+  dropName: "Drop 01",
+  seasonLabel: "SS26",
+  limitedEdition: false,
+  limitedQuantity: undefined,
+  colors: ["Black"],
+  materials: ["Technical fabric"],
+  fitProfile: "Relaxed",
+  careInstructions: "Dry clean or delicate cold wash depending on fabrication.",
+  sizeGuide: "Choose your usual size.",
+  editorialStory: "Editorial story coming soon.",
+  relatedProductIds: [],
+  crossSellProductIds: [],
 };
 
 const COPY: Record<
@@ -268,6 +282,20 @@ export default function AdminScreen() {
       sizeLabels: product.variants.map((item) => item.sizeLabel),
       style: product.style,
       defaultStock: product.variants[0]?.stock ?? 3,
+      brandName: product.brandName,
+      collectionName: product.collectionName,
+      dropName: product.dropName,
+      seasonLabel: product.seasonLabel,
+      limitedEdition: product.limitedEdition,
+      limitedQuantity: product.limitedQuantity,
+      colors: product.colors,
+      materials: product.materials,
+      fitProfile: product.fitProfile,
+      careInstructions: product.careInstructions,
+      sizeGuide: product.sizeGuide,
+      editorialStory: product.editorialStory,
+      relatedProductIds: product.relatedProductIds,
+      crossSellProductIds: product.crossSellProductIds,
     });
   };
 
