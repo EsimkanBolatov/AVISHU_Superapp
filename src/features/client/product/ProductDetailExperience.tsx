@@ -165,7 +165,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   visualPanel: {
-    minHeight: 320,
+    width: "100%",           // Задаем ширину
+    aspectRatio: 3 / 4,      // Пропорция, чтобы фото не улетало в бесконечность
     borderWidth: 1,
     borderRadius: 24,
     overflow: "hidden",

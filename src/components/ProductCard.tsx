@@ -97,8 +97,8 @@ export function ProductCard({
 
       <View style={[styles.content, isMobile && styles.contentMobile]}>
         <View style={styles.header}>
-          <Text 
-            numberOfLines={2} 
+          <Text
+            numberOfLines={2}
             style={[styles.title, isMobile && styles.titleMobile, { color: theme.colors.textPrimary }]}
           >
             {product.name}
@@ -106,9 +106,9 @@ export function ProductCard({
           <Text style={[styles.price, { color: theme.colors.textPrimary }]}>{product.formattedPrice}</Text>
         </View>
 
-        <Text 
-          numberOfLines={1} 
-          style={[styles.subtitle, { color: theme.colors.textSecondary }]}
+        <Text
+          numberOfLines={2}
+          style={[styles.subtitle, isMobile && styles.subtitleMobile, { color: theme.colors.textSecondary }]}
         >
           {product.subtitle}
         </Text>
@@ -151,12 +151,11 @@ const styles = StyleSheet.create({
     minHeight: 590,
   },
   cardMobile: {
-    width: "48%", 
-    flexBasis: "auto", 
-    flexGrow: 0,   
+    width: "100%",
+    flexBasis: "100%",
+    flexGrow: 0,
     minHeight: 0,
-    borderRadius: 16,
-    overflow: "hidden", 
+    borderRadius: 20,
   },
   visualWrap: {
     height: 360,
@@ -165,8 +164,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   visualWrapMobile: {
-    height: 140,
-    borderWidth: 0, 
+    height: 220,
   },
   glow: {
     position: "absolute",
@@ -222,8 +220,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   contentMobile: {
-    padding: 10, 
-    gap: 6, 
+    padding: 14,
+    gap: 8,
   },
   header: {
     gap: 8,
@@ -235,8 +233,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
   },
   titleMobile: {
-    fontSize: 14, 
-    lineHeight: 18,
+    fontSize: 22,
+    lineHeight: 24,
   },
   price: {
     fontFamily: "SpaceGrotesk_700Bold",
@@ -247,6 +245,10 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_400Regular",
     fontSize: 14,
     lineHeight: 23,
+  },
+  subtitleMobile: {
+    fontSize: 13,
+    lineHeight: 20,
   },
   footer: {
     marginTop: "auto",

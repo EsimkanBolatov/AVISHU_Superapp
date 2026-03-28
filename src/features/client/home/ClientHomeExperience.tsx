@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   heroVisual: {
-    minHeight: 240, 
+    height: 240,
     borderWidth: 1,
     borderRadius: 24,
     overflow: "hidden",
@@ -280,10 +280,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 14,
     gap: 10,
+    overflow: "hidden",
   },
   collectionImage: {
     width: "100%",
-    height: 124,
+    height: 132,
     borderRadius: 14,
   },
   collectionCount: {
@@ -305,10 +306,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   listBlock: {
-    flexDirection: "row", 
-    flexWrap: "wrap",     
-    justifyContent: "space-between",
-    paddingHorizontal: 16, 
-    gap: 12, 
+    gap: 12,
   },
 });
