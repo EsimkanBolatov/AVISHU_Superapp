@@ -1,6 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { referenceTechJacket } from "../lib/brandArt";
+import { getProductImageSource, getProductStock } from "../features/client/shared";
 import { useResolvedTheme } from "../lib/theme";
 import { useAppStore } from "../store/useAppStore";
 import { AppLanguage, Product } from "../types";
@@ -13,59 +13,69 @@ const COPY: Record<
     preorder: string;
     sizes: string;
     discover: string;
+    stock: string;
   }
 > = {
   ru: {
-    inStock: "В НАЛИЧИИ",
-    preorder: "ПРЕДЗАКАЗ",
-    sizes: "РАЗМЕРЫ",
-    discover: "ОТКРЫТЬ ПРОДУКТ",
+    inStock: "В наличии",
+    preorder: "Предзаказ",
+    sizes: "Размеры",
+    discover: "Открыть продукт",
+    stock: "Остаток",
   },
   kk: {
-    inStock: "ДАЙЫН",
-    preorder: "АЛДЫН АЛА ТАПСЫРЫС",
-    sizes: "ӨЛШЕМДЕР",
-    discover: "ӨНІМДІ АШУ",
+    inStock: "Қолда бар",
+    preorder: "Алдын ала тапсырыс",
+    sizes: "Өлшемдер",
+    discover: "Өнімді ашу",
+    stock: "Қор",
   },
   en: {
-    inStock: "READY STOCK",
-    preorder: "PREORDER",
-    sizes: "SIZES",
-    discover: "OPEN PRODUCT",
+    inStock: "Ready stock",
+    preorder: "Preorder",
+    sizes: "Sizes",
+    discover: "Open product",
+    stock: "Stock",
   },
 };
 
 export function ProductCard({
   onPress,
   product,
+  layout = "web",
 }: {
   onPress: () => void;
   product: Product;
+  layout?: "web" | "mobile";
 }) {
   const theme = useResolvedTheme();
-  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const copy = COPY[language];
-  const isCompact = width < 760;
-  const coverImage = product.media[0]?.url
-    ? { uri: product.media[0].url }
-    : referenceTechJacket;
+  const imageSource = getProductImageSource(product);
+  const stock = getProductStock(product);
+  const isMobile = layout === "mobile";
 
   return (
     <Pressable
       onPress={onPress}
       style={[
         styles.card,
-        isCompact && styles.cardCompact,
+        isMobile && styles.cardMobile,
         {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.borderSoft,
         },
       ]}
     >
-      <View style={[styles.visualWrap, isCompact && styles.visualWrapCompact, { borderColor: theme.colors.borderSoft }]}>
+      <View
+        style={[
+          styles.visualWrap,
+          isMobile && styles.visualWrapMobile,
+          { borderColor: theme.colors.borderSoft },
+        ]}
+      >
         <View style={[styles.glow, { backgroundColor: theme.colors.glow }]} />
-        <Image source={coverImage} style={styles.image} resizeMode="cover" />
+        <Image source={imageSource} style={styles.image} resizeMode="cover" />
         <View
           style={[
             styles.imageVeil,
@@ -85,12 +95,12 @@ export function ProductCard({
         </View>
       </View>
 
-        <View style={styles.content}>
+      <View style={[styles.content, isMobile && styles.contentMobile]}>
         <View style={styles.header}>
-          <Text style={[styles.title, isCompact && styles.titleCompact, { color: theme.colors.textPrimary }]}>{product.name}</Text>
-          <Text style={[styles.price, { color: theme.colors.textPrimary }]}>
-            {product.formattedPrice}
+          <Text style={[styles.title, isMobile && styles.titleMobile, { color: theme.colors.textPrimary }]}>
+            {product.name}
           </Text>
+          <Text style={[styles.price, { color: theme.colors.textPrimary }]}>{product.formattedPrice}</Text>
         </View>
 
         <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{product.subtitle}</Text>
@@ -105,11 +115,17 @@ export function ProductCard({
             </Text>
           </View>
 
-          <View style={[styles.metaRow, { borderColor: theme.colors.borderSoft }]}>
-            <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.sizes}</Text>
-            <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>
-              {product.variants.map((variant) => variant.sizeLabel).join(" / ")}
-            </Text>
+          <View style={[styles.metaSplit, { borderColor: theme.colors.borderSoft }]}>
+            <View style={styles.metaBlock}>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.sizes}</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>
+                {product.variants.map((variant) => variant.sizeLabel).join(" / ")}
+              </Text>
+            </View>
+            <View style={styles.metaBlock}>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.stock}</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.textSecondary }]}>{stock}</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -120,33 +136,34 @@ export function ProductCard({
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 28,
+    borderRadius: 30,
     flexBasis: 340,
     flexGrow: 1,
     overflow: "hidden",
-    minHeight: 560,
+    minHeight: 590,
   },
-  cardCompact: {
+  cardMobile: {
     flexBasis: "100%",
-    minHeight: 470,
+    minHeight: 0,
+    borderRadius: 24,
   },
   visualWrap: {
-    height: 350,
+    height: 360,
     borderBottomWidth: 1,
     overflow: "hidden",
     justifyContent: "space-between",
   },
-  visualWrapCompact: {
-    height: 270,
+  visualWrapMobile: {
+    height: 260,
   },
   glow: {
     position: "absolute",
-    top: -60,
+    top: -70,
     left: -40,
     width: 260,
     height: 260,
     borderRadius: 999,
-    opacity: 0.72,
+    opacity: 0.7,
   },
   image: {
     width: "100%",
@@ -157,8 +174,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 110,
-    opacity: 0.18,
+    height: 120,
+    opacity: 0.16,
   },
   visualTop: {
     position: "absolute",
@@ -189,26 +206,30 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 22,
     gap: 16,
+  },
+  contentMobile: {
+    padding: 18,
+    gap: 14,
   },
   header: {
     gap: 8,
   },
   title: {
     fontFamily: "Oswald_500Medium",
-    fontSize: 28,
-    lineHeight: 32,
+    fontSize: 30,
+    lineHeight: 34,
     letterSpacing: 0.9,
   },
-  titleCompact: {
+  titleMobile: {
     fontSize: 24,
     lineHeight: 28,
   },
   price: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 13,
-    letterSpacing: 1.3,
+    letterSpacing: 1.4,
   },
   subtitle: {
     fontFamily: "SpaceGrotesk_400Regular",
@@ -222,7 +243,19 @@ const styles = StyleSheet.create({
   metaRow: {
     borderTopWidth: 1,
     paddingTop: 12,
-    gap: 7,
+    gap: 8,
+  },
+  metaSplit: {
+    borderTopWidth: 1,
+    paddingTop: 12,
+    flexDirection: "row",
+    gap: 14,
+    flexWrap: "wrap",
+  },
+  metaBlock: {
+    flex: 1,
+    minWidth: 120,
+    gap: 6,
   },
   metaLabel: {
     fontFamily: "SpaceGrotesk_700Bold",
@@ -232,6 +265,6 @@ const styles = StyleSheet.create({
   metaValue: {
     fontFamily: "SpaceGrotesk_500Medium",
     fontSize: 12,
-    letterSpacing: 1,
+    letterSpacing: 0.9,
   },
 });

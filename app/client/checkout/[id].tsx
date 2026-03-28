@@ -1,22 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
-import { ChoiceChip } from "../../../src/components/ChoiceChip";
-import { MonoButton } from "../../../src/components/MonoButton";
-import { MonoInput } from "../../../src/components/MonoInput";
-import { Panel } from "../../../src/components/Panel";
 import { ScreenShell } from "../../../src/components/ScreenShell";
-import { SectionHeading } from "../../../src/components/SectionHeading";
-import { StatusPill } from "../../../src/components/StatusPill";
-import { referenceTechJacket } from "../../../src/lib/brandArt";
-import { useResolvedTheme } from "../../../src/lib/theme";
+import { CheckoutExperience } from "../../../src/features/client/checkout/CheckoutExperience";
 import { useRequireRole } from "../../../src/lib/useRequireRole";
 import { useAppStore } from "../../../src/store/useAppStore";
 import { AppLanguage, DeliveryMethod, PaymentMethod } from "../../../src/types";
-
-const PAYMENT_METHODS: PaymentMethod[] = ["card", "kaspi", "transfer"];
-const DELIVERY_METHODS: DeliveryMethod[] = ["pickup", "courier"];
 
 const COPY: Record<
   AppLanguage,
@@ -51,98 +40,96 @@ const COPY: Record<
   }
 > = {
   ru: {
-    shellPayment: "ОПЛАТА",
-    shellConfirmation: "ПОДТВЕРЖДЕНИЕ",
-    headerMeta: "КЛИЕНТСКИЙ ПОТОК / СЛЕДУЮЩИЙ ЭТАП ГОТОВ",
-    confirmedTitle: "ЗАКАЗ ПОДТВЕРЖДЕН",
-    confirmedSubtitle: "Заказ уже записан в live-операции и виден бизнес-ролям.",
-    status: "СТАТУС",
-    payment: "ОПЛАТА",
-    delivery: "ДОСТАВКА",
-    address: "АДРЕС",
-    openProfile: "ОТКРЫТЬ ПРОФИЛЬ",
-    backToClient: "НАЗАД К ВИТРИНЕ",
-    realCheckout: "РЕАЛЬНЫЙ CHECKOUT",
-    realCheckoutSubtitle: "Шаг теперь фиксирует оплату, доставку, адрес и связь с try-on историей.",
-    paymentMethod: "СПОСОБ ОПЛАТЫ",
-    deliveryMethod: "СПОСОБ ДОСТАВКИ",
-    shippingAddress: "АДРЕС ДОСТАВКИ",
-    contactPhone: "КОНТАКТНЫЙ ТЕЛЕФОН",
-    notes: "ПРИМЕЧАНИЯ",
+    shellPayment: "Оплата",
+    shellConfirmation: "Подтверждение",
+    headerMeta: "CLIENT FLOW / ORDER IS ALREADY LIVE",
+    confirmedTitle: "Заказ подтвержден",
+    confirmedSubtitle: "Этот заказ уже записан в operational-flow и виден бизнес-ролям в реальном времени.",
+    status: "Статус",
+    payment: "Оплата",
+    delivery: "Доставка",
+    address: "Адрес",
+    openProfile: "Открыть профиль",
+    backToClient: "Назад к витрине",
+    realCheckout: "Реальный checkout",
+    realCheckoutSubtitle: "Шаг фиксирует оплату, доставку, адрес и связку с try-on, если она была сохранена заранее.",
+    paymentMethod: "Способ оплаты",
+    deliveryMethod: "Способ доставки",
+    shippingAddress: "Адрес доставки",
+    contactPhone: "Контактный телефон",
+    notes: "Примечания",
     shippingPlaceholder: "Город, улица, дом, квартира",
     phonePlaceholder: "+7 ...",
-    notesPlaceholder: "Комментарии к упаковке, посадке или доставке",
-    preorderDate: "ДАТА ПРЕДЗАКАЗА",
-    linkedTryOn: "СВЯЗАННЫЙ TRY-ON",
-    placing: "СОЗДАНИЕ ЗАКАЗА...",
-    confirm: "ПОДТВЕРДИТЬ ЗАКАЗ",
-    back: "НАЗАД",
+    notesPlaceholder: "Комментарий к упаковке, посадке или доставке",
+    preorderDate: "Дата предзаказа",
+    linkedTryOn: "Связанный try-on",
+    placing: "Создание заказа...",
+    confirm: "Подтвердить заказ",
+    back: "Назад",
     size: "Размер",
   },
   kk: {
-    shellPayment: "ТӨЛЕМ",
-    shellConfirmation: "РАСТАУ",
-    headerMeta: "КЛИЕНТ АҒЫНЫ / КЕЛЕСІ КЕЗЕҢ ДАЙЫН",
-    confirmedTitle: "ТАПСЫРЫС РАСТАЛДЫ",
-    confirmedSubtitle: "Тапсырыс live-операцияларға жазылды және бизнес-рөлдерге көрінеді.",
-    status: "СТАТУС",
-    payment: "ТӨЛЕМ",
-    delivery: "ЖЕТКІЗУ",
-    address: "МЕКЕНЖАЙ",
-    openProfile: "ПРОФИЛЬДІ АШУ",
-    backToClient: "ВИТРИНАҒА ҚАЙТУ",
-    realCheckout: "НАҚТЫ CHECKOUT",
-    realCheckoutSubtitle: "Бұл қадам төлемді, жеткізуді, мекенжайды және try-on тарихымен байланысты сақтайды.",
-    paymentMethod: "ТӨЛЕМ ӘДІСІ",
-    deliveryMethod: "ЖЕТКІЗУ ӘДІСІ",
-    shippingAddress: "ЖЕТКІЗУ МЕКЕНЖАЙЫ",
-    contactPhone: "БАЙЛАНЫС ТЕЛЕФОНЫ",
-    notes: "ЕСКЕРТПЕ",
+    shellPayment: "Төлем",
+    shellConfirmation: "Растау",
+    headerMeta: "CLIENT FLOW / ORDER IS ALREADY LIVE",
+    confirmedTitle: "Тапсырыс расталды",
+    confirmedSubtitle: "Бұл тапсырыс operational-flow ішіне жазылып, бизнес-рөлдерге нақты уақытта көрінеді.",
+    status: "Статус",
+    payment: "Төлем",
+    delivery: "Жеткізу",
+    address: "Мекенжай",
+    openProfile: "Профильді ашу",
+    backToClient: "Витринаға қайту",
+    realCheckout: "Нақты checkout",
+    realCheckoutSubtitle: "Бұл қадам төлемді, жеткізуді, мекенжайды және сақталған try-on байланысын бекітеді.",
+    paymentMethod: "Төлем тәсілі",
+    deliveryMethod: "Жеткізу тәсілі",
+    shippingAddress: "Жеткізу мекенжайы",
+    contactPhone: "Байланыс телефоны",
+    notes: "Ескертпе",
     shippingPlaceholder: "Қала, көше, үй, пәтер",
     phonePlaceholder: "+7 ...",
-    notesPlaceholder: "Қаптама, отырымы немесе жеткізу туралы ескерту",
-    preorderDate: "АЛДЫН АЛА ТАПСЫРЫС КҮНІ",
-    linkedTryOn: "БАЙЛАНҒАН TRY-ON",
-    placing: "ТАПСЫРЫС ЖАСАЛУДА...",
-    confirm: "ТАПСЫРЫСТЫ РАСТАУ",
-    back: "АРТҚА",
+    notesPlaceholder: "Қаптама, отырымы немесе жеткізу туралы түсініктеме",
+    preorderDate: "Алдын ала тапсырыс күні",
+    linkedTryOn: "Байланған try-on",
+    placing: "Тапсырыс жасалуда...",
+    confirm: "Тапсырысты растау",
+    back: "Артқа",
     size: "Өлшем",
   },
   en: {
-    shellPayment: "PAYMENT",
-    shellConfirmation: "CONFIRMATION",
-    headerMeta: "CLIENT FLOW / NEXT STAGE READY",
-    confirmedTitle: "ORDER CONFIRMED",
-    confirmedSubtitle: "The order is already written into live operations and visible to business roles.",
-    status: "STATUS",
-    payment: "PAYMENT",
-    delivery: "DELIVERY",
-    address: "ADDRESS",
-    openProfile: "OPEN PROFILE",
-    backToClient: "BACK TO CLIENT",
-    realCheckout: "REAL CHECKOUT",
-    realCheckoutSubtitle: "This step captures payment, delivery, address and try-on linkage when available.",
-    paymentMethod: "PAYMENT METHOD",
-    deliveryMethod: "DELIVERY METHOD",
-    shippingAddress: "SHIPPING ADDRESS",
-    contactPhone: "CONTACT PHONE",
-    notes: "NOTES",
+    shellPayment: "Payment",
+    shellConfirmation: "Confirmation",
+    headerMeta: "CLIENT FLOW / ORDER IS ALREADY LIVE",
+    confirmedTitle: "Order confirmed",
+    confirmedSubtitle: "This order is already written into the operational flow and visible to business roles in real time.",
+    status: "Status",
+    payment: "Payment",
+    delivery: "Delivery",
+    address: "Address",
+    openProfile: "Open profile",
+    backToClient: "Back to vitrina",
+    realCheckout: "Real checkout",
+    realCheckoutSubtitle: "This step captures payment, delivery, address and any saved try-on linkage.",
+    paymentMethod: "Payment method",
+    deliveryMethod: "Delivery method",
+    shippingAddress: "Shipping address",
+    contactPhone: "Contact phone",
+    notes: "Notes",
     shippingPlaceholder: "City, street, house, apartment",
     phonePlaceholder: "+7 ...",
-    notesPlaceholder: "Packaging, fitting or delivery notes",
-    preorderDate: "PREORDER DATE",
-    linkedTryOn: "LINKED TRY-ON",
-    placing: "PLACING ORDER...",
-    confirm: "CONFIRM ORDER",
-    back: "BACK",
+    notesPlaceholder: "Packaging, fit or delivery notes",
+    preorderDate: "Preorder date",
+    linkedTryOn: "Linked try-on",
+    placing: "Placing order...",
+    confirm: "Confirm order",
+    back: "Back",
     size: "Size",
   },
 };
 
 export default function CheckoutScreen() {
   const redirect = useRequireRole("client");
-  const theme = useResolvedTheme();
-  const { width } = useWindowDimensions();
   const language = useAppStore((state) => state.language);
   const params = useLocalSearchParams<{
     id: string;
@@ -155,7 +142,7 @@ export default function CheckoutScreen() {
   const user = useAppStore((state) => state.user);
   const placeOrder = useAppStore((state) => state.placeOrder);
   const copy = COPY[language];
-  const isCompact = width < 760;
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("kaspi");
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("courier");
   const [shippingAddress, setShippingAddress] = useState(user?.defaultShippingAddress ?? "");
@@ -163,9 +150,9 @@ export default function CheckoutScreen() {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const existingOrder = orders.find((item) => item.id === params.id);
+  const existingOrder = orders.find((item) => item.id === params.id) ?? null;
   const product = useMemo(
-    () => products.find((item) => item.id === params.id),
+    () => products.find((item) => item.id === params.id) ?? null,
     [params.id, products],
   );
 
@@ -182,322 +169,73 @@ export default function CheckoutScreen() {
     return redirect;
   }
 
-  if (existingOrder) {
-    return (
-      <ScreenShell title={copy.shellPayment} subtitle={copy.shellConfirmation} profileRoute="/profile">
-        <View style={styles.container}>
-          <Panel style={styles.panel}>
-            <View style={styles.header}>
-              <StatusPill label="ORDER LOCKED / LIVE SYNC" tone="solid" />
-              <Text style={[styles.headerMeta, { color: theme.colors.textMuted }]}>{copy.headerMeta}</Text>
-            </View>
+  const selectedVariant =
+    product?.variants.find((variant) => variant.id === params.variantId) ?? product?.variants[0];
 
-            <View style={[styles.grid, isCompact && styles.gridCompact]}>
-              <View style={[styles.checkoutVisual, { borderColor: theme.colors.borderSoft }]}>
-                <Image
-                  source={existingOrder.productMediaUrl ? { uri: existingOrder.productMediaUrl } : referenceTechJacket}
-                  style={styles.visualImage}
-                  resizeMode="cover"
-                />
-              </View>
-
-              <View style={styles.copyBlock}>
-                <SectionHeading title={copy.confirmedTitle} subtitle={copy.confirmedSubtitle} />
-
-                <Text style={[styles.orderCode, { color: theme.colors.textPrimary }]}>
-                  {existingOrder.number}
-                </Text>
-
-                <Text style={[styles.copyText, { color: theme.colors.textSecondary }]}>
-                  {existingOrder.productName} / {existingOrder.totalFormatted}
-                </Text>
-
-                <View style={styles.infoRows}>
-                  {[
-                    [copy.status, existingOrder.status.replaceAll("_", " ").toUpperCase()],
-                    [copy.payment, existingOrder.paymentMethod.toUpperCase()],
-                    [copy.delivery, existingOrder.deliveryMethod.toUpperCase()],
-                    [copy.address, existingOrder.shippingAddress],
-                  ].map(([label, value]) => (
-                    <View key={label} style={[styles.infoRow, { borderColor: theme.colors.borderSoft }]}>
-                      <Text style={[styles.infoLabel, { color: theme.colors.textMuted }]}>{label}</Text>
-                      <Text style={[styles.infoValue, { color: theme.colors.textSecondary }]}>{value}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                <View style={styles.actions}>
-                  <MonoButton label={copy.openProfile} onPress={() => router.push("/profile")} />
-                  <MonoButton label={copy.backToClient} variant="secondary" onPress={() => router.replace("/client")} />
-                </View>
-              </View>
-            </View>
-          </Panel>
-        </View>
-      </ScreenShell>
-    );
-  }
-
-  if (!product) {
-    return null;
-  }
-
-  const selectedVariant = product.variants.find((variant) => variant.id === params.variantId) ?? product.variants[0];
+  const confirmationFields = existingOrder
+    ? [
+        { label: copy.status, value: existingOrder.status.replaceAll("_", " ").toUpperCase() },
+        { label: copy.payment, value: existingOrder.paymentMethod.toUpperCase() },
+        { label: copy.delivery, value: existingOrder.deliveryMethod.toUpperCase() },
+        { label: copy.address, value: existingOrder.shippingAddress },
+      ]
+    : [];
 
   return (
-    <ScreenShell title={copy.shellPayment} subtitle={product.name} profileRoute="/profile">
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={[styles.grid, isCompact && styles.gridCompact]}>
-          <Panel style={styles.checkoutVisual}>
-            <Image
-              source={product.media[0]?.url ? { uri: product.media[0].url } : referenceTechJacket}
-              style={styles.visualImage}
-              resizeMode="cover"
-            />
-            <View style={styles.visualMetaWrap}>
-              <StatusPill label={`${product.categoryName.toUpperCase()} / ${product.sku}`} tone="ghost" />
-              <Text style={[styles.visualHeadline, { color: theme.colors.textPrimary }]}>
-                {product.formattedPrice}
-              </Text>
-            </View>
-          </Panel>
+    <ScreenShell
+      title={copy.shellPayment}
+      subtitle={existingOrder ? copy.shellConfirmation : product?.name ?? copy.shellPayment}
+      profileRoute="/profile"
+    >
+      <CheckoutExperience
+        language={language}
+        copy={copy}
+        existingOrder={existingOrder}
+        product={product}
+        selectedVariant={selectedVariant}
+        paymentMethod={paymentMethod}
+        deliveryMethod={deliveryMethod}
+        shippingAddress={shippingAddress}
+        contactPhone={contactPhone}
+        notes={notes}
+        isSubmitting={isSubmitting}
+        scheduledDate={params.scheduledDate}
+        tryOnId={params.tryOnId}
+        confirmationFields={confirmationFields}
+        onSetPaymentMethod={(value) => setPaymentMethod(value as PaymentMethod)}
+        onSetDeliveryMethod={(value) => setDeliveryMethod(value as DeliveryMethod)}
+        onSetShippingAddress={setShippingAddress}
+        onSetContactPhone={setContactPhone}
+        onSetNotes={setNotes}
+        onConfirm={async () => {
+          if (!product || !selectedVariant) {
+            return;
+          }
 
-          <Panel style={styles.checkoutForm}>
-            <SectionHeading title={copy.realCheckout} subtitle={copy.realCheckoutSubtitle} />
+          setIsSubmitting(true);
 
-            <View style={styles.summaryBlock}>
-              <Text style={[styles.summaryTitle, { color: theme.colors.textPrimary }]}>{product.name}</Text>
-              <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>
-                {copy.size} {selectedVariant?.sizeLabel ?? "N/A"} / {product.formattedPrice}
-              </Text>
-            </View>
+          try {
+            const order = await placeOrder({
+              productId: product.id,
+              variantId: selectedVariant.id,
+              paymentMethod,
+              deliveryMethod,
+              shippingAddress,
+              contactPhone,
+              scheduledDate: params.scheduledDate,
+              notes,
+              tryOnId: params.tryOnId,
+            });
 
-            <View style={styles.selectionBlock}>
-              <Text style={[styles.selectionLabel, { color: theme.colors.textMuted }]}>{copy.paymentMethod}</Text>
-              <View style={styles.choiceRow}>
-                {PAYMENT_METHODS.map((item) => (
-                  <ChoiceChip
-                    key={item}
-                    label={item.toUpperCase()}
-                    active={paymentMethod === item}
-                    onPress={() => setPaymentMethod(item)}
-                  />
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.selectionBlock}>
-              <Text style={[styles.selectionLabel, { color: theme.colors.textMuted }]}>{copy.deliveryMethod}</Text>
-              <View style={styles.choiceRow}>
-                {DELIVERY_METHODS.map((item) => (
-                  <ChoiceChip
-                    key={item}
-                    label={item.toUpperCase()}
-                    active={deliveryMethod === item}
-                    onPress={() => setDeliveryMethod(item)}
-                  />
-                ))}
-              </View>
-            </View>
-
-            <MonoInput
-              label={copy.shippingAddress}
-              value={shippingAddress}
-              onChangeText={setShippingAddress}
-              multiline
-              placeholder={copy.shippingPlaceholder}
-            />
-            <MonoInput
-              label={copy.contactPhone}
-              value={contactPhone}
-              onChangeText={setContactPhone}
-              keyboardType="phone-pad"
-              placeholder={copy.phonePlaceholder}
-            />
-            <MonoInput
-              label={copy.notes}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              placeholder={copy.notesPlaceholder}
-            />
-
-            <View style={styles.infoRows}>
-              {params.scheduledDate ? (
-                <View style={[styles.infoRow, { borderColor: theme.colors.borderSoft }]}>
-                  <Text style={[styles.infoLabel, { color: theme.colors.textMuted }]}>{copy.preorderDate}</Text>
-                  <Text style={[styles.infoValue, { color: theme.colors.textSecondary }]}>{params.scheduledDate}</Text>
-                </View>
-              ) : null}
-              {params.tryOnId ? (
-                <View style={[styles.infoRow, { borderColor: theme.colors.borderSoft }]}>
-                  <Text style={[styles.infoLabel, { color: theme.colors.textMuted }]}>{copy.linkedTryOn}</Text>
-                  <Text style={[styles.infoValue, { color: theme.colors.textSecondary }]}>{params.tryOnId}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            <View style={styles.actions}>
-              <MonoButton
-                label={isSubmitting ? copy.placing : copy.confirm}
-                onPress={async () => {
-                  if (!selectedVariant) {
-                    return;
-                  }
-
-                  setIsSubmitting(true);
-
-                  try {
-                    const order = await placeOrder({
-                      productId: product.id,
-                      variantId: selectedVariant.id,
-                      paymentMethod,
-                      deliveryMethod,
-                      shippingAddress,
-                      contactPhone,
-                      scheduledDate: params.scheduledDate,
-                      notes,
-                      tryOnId: params.tryOnId,
-                    });
-
-                    router.replace(`/client/checkout/${order.id}`);
-                  } finally {
-                    setIsSubmitting(false);
-                  }
-                }}
-              />
-              <MonoButton label={copy.back} variant="secondary" onPress={() => router.back()} />
-            </View>
-          </Panel>
-        </View>
-      </ScrollView>
+            router.replace(`/client/checkout/${order.id}`);
+          } finally {
+            setIsSubmitting(false);
+          }
+        }}
+        onBack={() => router.back()}
+        onOpenProfile={() => router.push("/profile")}
+        onBackToClient={() => router.replace("/client")}
+      />
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    gap: 18,
-    paddingBottom: 24,
-  },
-  panel: {
-    maxWidth: 1080,
-    alignSelf: "center",
-    width: "100%",
-    gap: 18,
-  },
-  header: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 10,
-    alignItems: "center",
-  },
-  headerMeta: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 10,
-    letterSpacing: 1.6,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 18,
-  },
-  gridCompact: {
-    gap: 14,
-  },
-  checkoutVisual: {
-    flex: 0.9,
-    minWidth: 300,
-    minHeight: 520,
-    padding: 0,
-    overflow: "hidden",
-  },
-  visualImage: {
-    width: "100%",
-    height: "100%",
-  },
-  visualMetaWrap: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 16,
-    gap: 12,
-  },
-  visualHeadline: {
-    fontFamily: "Oswald_500Medium",
-    fontSize: 44,
-    letterSpacing: 1.2,
-  },
-  checkoutForm: {
-    flex: 1,
-    minWidth: 300,
-    gap: 16,
-  },
-  summaryBlock: {
-    gap: 4,
-  },
-  summaryTitle: {
-    fontFamily: "Oswald_500Medium",
-    fontSize: 34,
-    letterSpacing: 0.8,
-  },
-  summaryText: {
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  selectionBlock: {
-    gap: 10,
-  },
-  selectionLabel: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 10,
-    letterSpacing: 1.4,
-  },
-  choiceRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  copyBlock: {
-    flex: 1,
-    minWidth: 300,
-    gap: 18,
-  },
-  orderCode: {
-    fontFamily: "Oswald_500Medium",
-    fontSize: 54,
-    letterSpacing: 2,
-  },
-  copyText: {
-    fontFamily: "SpaceGrotesk_400Regular",
-    fontSize: 15,
-    lineHeight: 24,
-  },
-  infoRows: {
-    gap: 10,
-  },
-  infoRow: {
-    borderTopWidth: 1,
-    paddingTop: 10,
-    gap: 6,
-  },
-  infoLabel: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 10,
-    letterSpacing: 1.5,
-  },
-  infoValue: {
-    fontFamily: "SpaceGrotesk_500Medium",
-    fontSize: 13,
-    lineHeight: 21,
-  },
-  actions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-});
