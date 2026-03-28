@@ -7,6 +7,7 @@ import {
   PlaceOrderPayload,
   ProductUpsertPayload,
   RegisterPayload,
+  UpdateProfilePayload,
 } from "../types";
 
 const CORE_API_URL = process.env.EXPO_PUBLIC_CORE_API_URL ?? "http://localhost:3000";
@@ -62,6 +63,14 @@ export async function logoutRequest(token: string) {
 export async function sessionRequest(token: string) {
   return request<{ user: BootstrapPayload["user"] }>("/api/core/v1/auth/session", {
     headers: authHeaders(token),
+  });
+}
+
+export async function updateProfileRequest(token: string, payload: UpdateProfilePayload) {
+  return request<{ user: BootstrapPayload["user"] }>("/api/core/v1/profile", {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
   });
 }
 

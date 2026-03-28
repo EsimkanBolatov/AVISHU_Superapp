@@ -24,11 +24,13 @@ import {
   registerRequest,
   updateOrderStatusRequest,
   updateProductRequest,
+  updateProfileRequest,
 } from "../lib/api";
 import {
   AppLanguage,
   AuthPayload,
   BootstrapPayload,
+  CartItem,
   Category,
   CreateTryOnPayload,
   DashboardMetrics,
@@ -40,6 +42,7 @@ import {
   RegisterPayload,
   ThemePreference,
   TryOnSession,
+  UpdateProfilePayload,
   User,
 } from "../types";
 
@@ -50,6 +53,7 @@ interface AppState {
   products: Product[];
   orders: Order[];
   tryOnSessions: TryOnSession[];
+  cartItems: CartItem[];
   metrics: DashboardMetrics;
   activeOrder: Order | null;
   language: AppLanguage;
@@ -63,6 +67,7 @@ interface AppState {
   login: (payload: AuthPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (payload: UpdateProfilePayload) => Promise<void>;
   createTryOn: (payload: CreateTryOnPayload) => Promise<TryOnSession>;
   placeOrder: (payload: PlaceOrderPayload) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
@@ -71,6 +76,10 @@ interface AppState {
   createProduct: (payload: ProductUpsertPayload) => Promise<void>;
   updateProduct: (productId: string, payload: Partial<ProductUpsertPayload>) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
+  addToCart: (item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }) => void;
+  updateCartQuantity: (itemId: string, quantity: number) => void;
+  removeFromCart: (itemId: string) => void;
+  clearCart: () => void;
 }
 
 const EMPTY_METRICS: DashboardMetrics = {
@@ -93,7 +102,7 @@ function getActiveOrder(user: User | null, orders: Order[]) {
   );
 }
 
-function mapBootstrap(token: string, bootstrap: BootstrapPayload) {
+function mapBootstrap(token: string, bootstrap: BootstrapPayload, cartItems: CartItem[]) {
   return {
     token,
     user: bootstrap.user,
@@ -102,6 +111,7 @@ function mapBootstrap(token: string, bootstrap: BootstrapPayload) {
     orders: bootstrap.orders,
     tryOnSessions: bootstrap.tryOnSessions,
     metrics: bootstrap.metrics,
+    cartItems,
     activeOrder: getActiveOrder(bootstrap.user, bootstrap.orders),
   };
 }
@@ -158,6 +168,10 @@ function clearSessionState(set: (partial: Partial<AppState>) => void, get: () =>
   });
 }
 
+function buildCartItemId(productId: string, variantId: string, scheduledDate?: string, tryOnId?: string) {
+  return [productId, variantId, scheduledDate ?? "", tryOnId ?? ""].join(":");
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -167,6 +181,7 @@ export const useAppStore = create<AppState>()(
       products: [],
       orders: [],
       tryOnSessions: [],
+      cartItems: [],
       metrics: EMPTY_METRICS,
       activeOrder: null,
       language: "ru",
@@ -186,7 +201,7 @@ export const useAppStore = create<AppState>()(
           const bootstrap = await bootstrapRequest(token);
           attachSocket(token, set, get);
           set({
-            ...mapBootstrap(token, bootstrap),
+            ...mapBootstrap(token, bootstrap, get().cartItems),
           });
         } catch {
           clearSessionState(set, get);
@@ -201,7 +216,7 @@ export const useAppStore = create<AppState>()(
 
         const bootstrap = await bootstrapRequest(token);
         set({
-          ...mapBootstrap(token, bootstrap),
+          ...mapBootstrap(token, bootstrap, get().cartItems),
         });
       },
       setLanguage: (language) => {
@@ -217,7 +232,7 @@ export const useAppStore = create<AppState>()(
           const bootstrap = await bootstrapRequest(auth.token);
           attachSocket(auth.token, set, get);
           set({
-            ...mapBootstrap(auth.token, bootstrap),
+            ...mapBootstrap(auth.token, bootstrap, get().cartItems),
           });
         } finally {
           set({ isLoading: false });
@@ -231,7 +246,7 @@ export const useAppStore = create<AppState>()(
           const bootstrap = await bootstrapRequest(auth.token);
           attachSocket(auth.token, set, get);
           set({
-            ...mapBootstrap(auth.token, bootstrap),
+            ...mapBootstrap(auth.token, bootstrap, get().cartItems),
           });
         } finally {
           set({ isLoading: false });
@@ -249,6 +264,16 @@ export const useAppStore = create<AppState>()(
         }
 
         clearSessionState(set, get);
+      },
+      updateProfile: async (payload) => {
+        const token = get().token;
+
+        if (!token) {
+          throw new Error("No session");
+        }
+
+        const response = await updateProfileRequest(token, payload);
+        set({ user: response.user });
       },
       createTryOn: async (payload) => {
         const token = get().token;
@@ -356,6 +381,56 @@ export const useAppStore = create<AppState>()(
           products: get().products.filter((product) => product.id !== productId),
         });
       },
+      addToCart: ({ productId, variantId, quantity = 1, scheduledDate, tryOnId }) => {
+        const id = buildCartItemId(productId, variantId, scheduledDate, tryOnId);
+        const current = get().cartItems;
+        const existing = current.find((item) => item.id === id);
+
+        if (existing) {
+          set({
+            cartItems: current.map((item) =>
+              item.id === id ? { ...item, quantity: item.quantity + quantity } : item,
+            ),
+          });
+          return;
+        }
+
+        set({
+          cartItems: [
+            ...current,
+            {
+              id,
+              productId,
+              variantId,
+              quantity,
+              scheduledDate,
+              tryOnId,
+            },
+          ],
+        });
+      },
+      updateCartQuantity: (itemId, quantity) => {
+        if (quantity <= 0) {
+          set({
+            cartItems: get().cartItems.filter((item) => item.id !== itemId),
+          });
+          return;
+        }
+
+        set({
+          cartItems: get().cartItems.map((item) =>
+            item.id === itemId ? { ...item, quantity } : item,
+          ),
+        });
+      },
+      removeFromCart: (itemId) => {
+        set({
+          cartItems: get().cartItems.filter((item) => item.id !== itemId),
+        });
+      },
+      clearCart: () => {
+        set({ cartItems: [] });
+      },
     }),
     {
       name: "avishu-ui-preferences",
@@ -364,6 +439,7 @@ export const useAppStore = create<AppState>()(
         language: state.language,
         themePreference: state.themePreference,
         token: state.token,
+        cartItems: state.cartItems,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

@@ -28,6 +28,10 @@ export interface User {
   role: Role;
   avatarUrl?: string;
   phone?: string;
+  defaultShippingAddress?: string;
+  paymentCardBrand?: string;
+  paymentCardLast4?: string;
+  paymentCardHolder?: string;
   loyaltyProgress: number;
 }
 
@@ -131,6 +135,15 @@ export interface Order {
   attachments: OrderAttachment[];
 }
 
+export interface CartItem {
+  id: string;
+  productId: string;
+  variantId: string;
+  quantity: number;
+  scheduledDate?: string;
+  tryOnId?: string;
+}
+
 export interface DashboardMetrics {
   revenue: string;
   plan: string;
@@ -178,6 +191,15 @@ export interface PlaceOrderPayload {
   scheduledDate?: string;
   notes?: string;
   tryOnId?: string;
+}
+
+export interface UpdateProfilePayload {
+  name: string;
+  phone?: string;
+  defaultShippingAddress?: string;
+  paymentCardBrand?: string;
+  paymentCardLast4?: string;
+  paymentCardHolder?: string;
 }
 
 export interface ProductUpsertPayload {

@@ -106,6 +106,37 @@ app.get("/api/core/v1/auth/session", authMiddleware, async (request, response) =
   response.json({ user: request.user });
 });
 
+app.patch("/api/core/v1/profile", authMiddleware, async (request, response) => {
+  const name = String(request.body?.name ?? request.user.name).trim();
+  const phone = String(request.body?.phone ?? request.user.phone ?? "").trim();
+  const defaultShippingAddress = String(
+    request.body?.defaultShippingAddress ?? request.user.defaultShippingAddress ?? "",
+  ).trim();
+  const paymentCardBrand = String(
+    request.body?.paymentCardBrand ?? request.user.paymentCardBrand ?? "",
+  ).trim();
+  const paymentCardLast4 = String(
+    request.body?.paymentCardLast4 ?? request.user.paymentCardLast4 ?? "",
+  ).trim();
+  const paymentCardHolder = String(
+    request.body?.paymentCardHolder ?? request.user.paymentCardHolder ?? "",
+  ).trim();
+
+  const updatedUser = await prisma.user.update({
+    where: { id: request.user.id },
+    data: {
+      name,
+      phone: phone || null,
+      defaultShippingAddress: defaultShippingAddress || null,
+      paymentCardBrand: paymentCardBrand || null,
+      paymentCardLast4: paymentCardLast4 || null,
+      paymentCardHolder: paymentCardHolder || null,
+    },
+  });
+
+  response.json({ user: serializeUser(updatedUser) });
+});
+
 app.post("/api/core/v1/auth/logout", authMiddleware, async (request, response) => {
   await prisma.session.deleteMany({
     where: { token: request.token },
@@ -572,6 +603,18 @@ void prisma.$connect().then(() => {
   });
 });
 
+httpServer.on("error", (error) => {
+  if ((error as NodeJS.ErrnoException).code === "EADDRINUSE") {
+    console.error(
+      `Port ${port} is already in use. Most likely the core API is already running in another terminal.`,
+    );
+    console.error(`Stop the existing process or change PORT in server/core-api/.env and EXPO_PUBLIC_CORE_API_URL in root .env.`);
+    process.exit(1);
+  }
+
+  throw error;
+});
+
 const productInclude = {
   category: true,
   media: {
@@ -760,6 +803,10 @@ function serializeUser(user: {
   role: PrismaRole;
   avatarUrl: string | null;
   phone: string | null;
+  defaultShippingAddress: string | null;
+  paymentCardBrand: string | null;
+  paymentCardLast4: string | null;
+  paymentCardHolder: string | null;
   loyaltyProgress: number;
 }): User {
   return {
@@ -769,6 +816,10 @@ function serializeUser(user: {
     role: user.role as Role,
     avatarUrl: user.avatarUrl ?? undefined,
     phone: user.phone ?? undefined,
+    defaultShippingAddress: user.defaultShippingAddress ?? undefined,
+    paymentCardBrand: user.paymentCardBrand ?? undefined,
+    paymentCardLast4: user.paymentCardLast4 ?? undefined,
+    paymentCardHolder: user.paymentCardHolder ?? undefined,
     loyaltyProgress: user.loyaltyProgress,
   };
 }

@@ -29,6 +29,10 @@ async function main() {
         name: "Aigerim K.",
         role: "client",
         phone: "+7 777 555 21 10",
+        defaultShippingAddress: "Almaty, Al-Farabi avenue 19, apt 120",
+        paymentCardBrand: "VISA",
+        paymentCardLast4: "4472",
+        paymentCardHolder: "Aigerim K.",
         avatarUrl:
           "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
         loyaltyProgress: 72,

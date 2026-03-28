@@ -2,6 +2,7 @@ import { Redirect, router } from "expo-router";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LanguageSwitch } from "../src/components/LanguageSwitch";
 import { MonoButton } from "../src/components/MonoButton";
 import { Panel } from "../src/components/Panel";
 import { StatusPill } from "../src/components/StatusPill";
@@ -9,23 +10,97 @@ import { ThemeSwitch } from "../src/components/ThemeSwitch";
 import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
+import { AppLanguage } from "../src/types";
 
-const FEATURE_ROWS = [
-  ["ULTRA CLEAN SHELL", "Layered premium outerwear and tech-tailoring silhouettes."],
-  ["AI FIT / COMMERCE READY", "Try-on, preorder and ready-stock flows in one premium interface."],
-  ["STORE TO ATELIER LOOP", "Client, franchisee and production roles share one live order spine."],
-];
-
-const SYSTEM_ROWS = [
-  "01 / PREMIUM OUTERWEAR",
-  "02 / PREORDER MECHANICS",
-  "03 / TECHNICAL PRODUCT STORY",
-  "04 / MONOCHROME EXPERIENCE",
-];
+const COPY: Record<
+  AppLanguage,
+  {
+    meta: string;
+    badge: string;
+    kicker: string;
+    title: string;
+    body: string;
+    primary: string;
+    secondary: string;
+    visualLabel: string;
+    visualHeadline: string;
+    systemRows: string[];
+    featureRows: Array<[string, string]>;
+  }
+> = {
+  ru: {
+    meta: "FUTURE OUTERWEAR / COMMERCE SYSTEM",
+    badge: "REFERENCE DIRECTION / TECH RETAIL",
+    kicker: "AVISHU SYSTEM DROP",
+    title: "ПРЕМИАЛЬНЫЙ МАГАЗИН OUTERWEAR С СИЛЬНОЙ ИСТОРИЕЙ ПРОДУКТА, FIT-TECH И ЖИВОЙ ОПЕРАЦИОННОЙ СИСТЕМОЙ",
+    body: "AVISHU должен ощущаться как холодный высококлассный fashion-tech бренд. Здесь важны тишина в композиции, строгая типографика, архитектурная подача продукта и ощущение дорогого цифрового бутика.",
+    primary: "ВОЙТИ В СИСТЕМУ",
+    secondary: "ОТКРЫТЬ ВИТРИНУ",
+    visualLabel: "EDITORIAL PRODUCT / HERO FRAME",
+    visualHeadline: "AI TRY-ON / PRODUCT STORY / HIGH-END COMMERCE",
+    systemRows: [
+      "01 / PREMIUM OUTERWEAR",
+      "02 / TRILINGUAL EXPERIENCE",
+      "03 / AI FIT PIPELINE",
+      "04 / STORE TO ATELIER LOOP",
+    ],
+    featureRows: [
+      ["ПРЕМИАЛЬНАЯ ПОДАЧА", "Большие image-led блоки, спокойный ритм и дорогая визуальная дисциплина."],
+      ["3 ЯЗЫКА", "Русский, казахский и английский для большего охвата клиентов."],
+      ["ЕДИНЫЙ ПРОДУКТ", "Каталог, try-on, заказ и операционный цикл работают в одной системе."],
+    ],
+  },
+  kk: {
+    meta: "FUTURE OUTERWEAR / COMMERCE SYSTEM",
+    badge: "REFERENCE DIRECTION / TECH RETAIL",
+    kicker: "AVISHU SYSTEM DROP",
+    title: "ПРЕМИУМ OUTERWEAR ДҮКЕНІ: КҮШТІ PRODUCT STORY, FIT-TECH ЖӘНЕ ТІРІ ОПЕРАЦИЯЛЫҚ ЖҮЙЕ",
+    body: "AVISHU суық, жоғары класты fashion-tech бренд ретінде сезілуі керек. Композиция тыныш, типография нақты, ал өнім ұсынысы қымбат цифрлық бутик әсерін беруі тиіс.",
+    primary: "ЖҮЙЕГЕ КІРУ",
+    secondary: "ВИТРИНАНЫ АШУ",
+    visualLabel: "EDITORIAL PRODUCT / HERO FRAME",
+    visualHeadline: "AI TRY-ON / PRODUCT STORY / HIGH-END COMMERCE",
+    systemRows: [
+      "01 / PREMIUM OUTERWEAR",
+      "02 / TRILINGUAL EXPERIENCE",
+      "03 / AI FIT PIPELINE",
+      "04 / STORE TO ATELIER LOOP",
+    ],
+    featureRows: [
+      ["ПРЕМИУМ ҰСЫНЫС", "Үлкен image-led блоктар, сабырлы ритм және қымбат визуалдық тәртіп."],
+      ["3 ТІЛ", "Клиенттерді кеңірек қамту үшін қазақ, орыс және ағылшын тілдері."],
+      ["БІРТҰТАС ӨНІМ", "Каталог, try-on, тапсырыс және операциялық цикл бір жүйеде біріктірілген."],
+    ],
+  },
+  en: {
+    meta: "FUTURE OUTERWEAR / COMMERCE SYSTEM",
+    badge: "REFERENCE DIRECTION / TECH RETAIL",
+    kicker: "AVISHU SYSTEM DROP",
+    title: "FUTURE OUTERWEAR STORE WITH PRODUCT STORY, FIT TECH AND LIVE ORDER OPERATIONS",
+    body: "AVISHU should feel like a premium cold fashion-tech house. The interface has to stay quiet, architectural and product-led, with the precision of a high-class digital boutique rather than a generic marketplace.",
+    primary: "ENTER EXPERIENCE",
+    secondary: "OPEN VITRINA",
+    visualLabel: "EDITORIAL PRODUCT / HERO FRAME",
+    visualHeadline: "AI TRY-ON / PRODUCT STORY / HIGH-END COMMERCE",
+    systemRows: [
+      "01 / PREMIUM OUTERWEAR",
+      "02 / TRILINGUAL EXPERIENCE",
+      "03 / AI FIT PIPELINE",
+      "04 / STORE TO ATELIER LOOP",
+    ],
+    featureRows: [
+      ["PREMIUM DIRECTION", "Large image-led modules, quiet rhythm and sharper luxury visual discipline."],
+      ["3 LANGUAGES", "Russian, Kazakh and English for a wider premium customer reach."],
+      ["ONE PRODUCT SYSTEM", "Catalog, try-on, checkout and operations live inside one connected flow."],
+    ],
+  },
+};
 
 export default function IndexScreen() {
   const user = useAppStore((state) => state.user);
+  const language = useAppStore((state) => state.language);
   const theme = useResolvedTheme();
+  const copy = COPY[language];
 
   if (user?.role === "client") {
     return <Redirect href="/client" />;
@@ -45,11 +120,10 @@ export default function IndexScreen() {
         <View style={styles.topbar}>
           <View style={styles.topbarLeft}>
             <Text style={[styles.logo, { color: theme.colors.textPrimary }]}>AVISHU</Text>
-            <Text style={[styles.topbarMeta, { color: theme.colors.textMuted }]}>
-              FUTURE OUTERWEAR / COMMERCE SYSTEM
-            </Text>
+            <Text style={[styles.topbarMeta, { color: theme.colors.textMuted }]}>{copy.meta}</Text>
           </View>
           <View style={styles.topbarRight}>
+            <LanguageSwitch />
             <ThemeSwitch />
             <StatusPill label="LIVE PROTOTYPE / 2026" tone="ghost" />
           </View>
@@ -57,58 +131,55 @@ export default function IndexScreen() {
 
         <View style={styles.hero}>
           <View style={styles.heroLeft}>
-            <StatusPill label="REFERENCE DIRECTION / TECH RETAIL" tone="solid" />
-            <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>AVISHU SYSTEM DROP</Text>
-            <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>
-              FUTURE OUTERWEAR STORE WITH PRODUCT STORY, FIT TECH AND LIVE ORDER OPERATIONS
-            </Text>
-            <Text style={[styles.heroCopy, { color: theme.colors.textSecondary }]}>
-              The next version of AVISHU should feel closer to Krakatau, Acronym and advanced
-              editorial retail than to a generic marketplace. We shift from demo cards to a cold,
-              precise, image-led commerce experience.
-            </Text>
+            <StatusPill label={copy.badge} tone="solid" />
+            <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>{copy.kicker}</Text>
+            <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>{copy.title}</Text>
+            <Text style={[styles.heroCopy, { color: theme.colors.textSecondary }]}>{copy.body}</Text>
 
             <View style={styles.heroActions}>
-              <MonoButton label="ENTER EXPERIENCE" onPress={() => router.push("/login")} />
-              <MonoButton label="OPEN CLIENT VITRINA" variant="secondary" onPress={() => router.push("/login")} />
+              <MonoButton label={copy.primary} onPress={() => router.push("/login")} />
+              <MonoButton label={copy.secondary} variant="secondary" onPress={() => router.push("/login")} />
             </View>
 
             <View style={styles.systemList}>
-              {SYSTEM_ROWS.map((item) => (
-                <View
-                  key={item}
-                  style={[styles.systemRow, { borderColor: theme.colors.borderSoft }]}
-                >
-                  <Text style={[styles.systemText, { color: theme.colors.textSecondary }]}>
-                    {item}
-                  </Text>
+              {copy.systemRows.map((item) => (
+                <View key={item} style={[styles.systemRow, { borderColor: theme.colors.borderSoft }]}>
+                  <Text style={[styles.systemText, { color: theme.colors.textSecondary }]}>{item}</Text>
                 </View>
               ))}
             </View>
           </View>
 
           <Panel style={styles.heroVisual}>
-            <View style={[styles.heroGlow, { backgroundColor: theme.colors.glow }]} />
-            <Image source={referenceTechJacket} style={styles.heroImage} resizeMode="cover" />
+            <View
+              style={[
+                styles.heroGlow,
+                {
+                  backgroundColor: theme.colors.glow,
+                },
+              ]}
+            />
+            <View style={[styles.imageMask, { backgroundColor: theme.colors.surfaceSecondary }]}>
+              <Image source={referenceTechJacket} style={styles.heroImage} resizeMode="cover" />
+              <View style={[styles.imageVeil, { backgroundColor: theme.colors.backgroundSecondary }]} />
+            </View>
             <View style={styles.heroOverlayTop}>
-              <Text style={[styles.visualLabel, { color: theme.colors.textMuted }]}>
-                STORM SHELL / VISUAL REFERENCE
-              </Text>
+              <Text style={[styles.visualLabel, { color: theme.colors.textMuted }]}>{copy.visualLabel}</Text>
               <Text style={[styles.visualStats, { color: theme.colors.textPrimary }]}>XS - XL</Text>
             </View>
             <View style={styles.heroOverlayBottom}>
               <Text style={[styles.visualHeadline, { color: theme.colors.textPrimary }]}>
-                AI TRY-ON / PRODUCT DETAIL / HIGH-END COMMERCE
+                {copy.visualHeadline}
               </Text>
             </View>
           </Panel>
         </View>
 
         <View style={styles.featureGrid}>
-          {FEATURE_ROWS.map(([title, copy]) => (
+          {copy.featureRows.map(([title, body]) => (
             <Panel key={title} style={styles.featureCard}>
               <Text style={[styles.featureTitle, { color: theme.colors.textPrimary }]}>{title}</Text>
-              <Text style={[styles.featureCopy, { color: theme.colors.textSecondary }]}>{copy}</Text>
+              <Text style={[styles.featureCopy, { color: theme.colors.textSecondary }]}>{body}</Text>
             </Panel>
           ))}
         </View>
@@ -171,7 +242,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
   },
   heroTitle: {
-    maxWidth: 680,
+    maxWidth: 720,
     fontFamily: "Oswald_500Medium",
     fontSize: 58,
     lineHeight: 62,
@@ -208,6 +279,7 @@ const styles = StyleSheet.create({
     minHeight: 760,
     justifyContent: "space-between",
     padding: 0,
+    overflow: "hidden",
   },
   heroGlow: {
     position: "absolute",
@@ -216,14 +288,28 @@ const styles = StyleSheet.create({
     width: 440,
     height: 440,
     borderRadius: 999,
-    opacity: 0.82,
+    opacity: 0.72,
+  },
+  imageMask: {
+    position: "absolute",
+    inset: 0,
+    overflow: "hidden",
   },
   heroImage: {
     position: "absolute",
-    right: -46,
+    right: -260,
+    bottom: -34,
+    width: 1180,
+    height: 880,
+    transform: [{ scale: 1.08 }],
+  },
+  imageVeil: {
+    position: "absolute",
+    left: 0,
+    top: 0,
     bottom: 0,
-    width: 520,
-    height: 760,
+    width: "34%",
+    opacity: 0.88,
   },
   heroOverlayTop: {
     paddingHorizontal: 22,
@@ -235,7 +321,7 @@ const styles = StyleSheet.create({
   heroOverlayBottom: {
     paddingHorizontal: 22,
     paddingBottom: 22,
-    maxWidth: 340,
+    maxWidth: 360,
   },
   visualLabel: {
     fontFamily: "SpaceGrotesk_700Bold",

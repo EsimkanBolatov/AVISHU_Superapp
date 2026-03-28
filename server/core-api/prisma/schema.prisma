@@ -64,6 +64,10 @@ model User {
   role            Role
   avatarUrl       String?
   phone           String?
+  defaultShippingAddress String?
+  paymentCardBrand String?
+  paymentCardLast4 String?
+  paymentCardHolder String?
   loyaltyProgress Int               @default(0)
   sessions        Session[]
   orders          Order[]           @relation("CustomerOrders")

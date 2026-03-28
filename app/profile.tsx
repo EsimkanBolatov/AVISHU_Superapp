@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { LanguageSwitch } from "../src/components/LanguageSwitch";
 import { MonoButton } from "../src/components/MonoButton";
 import { OrderTracker } from "../src/components/OrderTracker";
 import { Panel } from "../src/components/Panel";
@@ -11,6 +12,88 @@ import { ThemeSwitch } from "../src/components/ThemeSwitch";
 import { referenceTechJacket } from "../src/lib/brandArt";
 import { useResolvedTheme } from "../src/lib/theme";
 import { useAppStore } from "../src/store/useAppStore";
+import { AppLanguage } from "../src/types";
+
+const COPY: Record<
+  AppLanguage,
+  {
+    subtitle: string;
+    themeTitle: string;
+    themeSubtitle: string;
+    languageTitle: string;
+    languageSubtitle: string;
+    accountTitle: string;
+    accountSubtitle: string;
+    roleLabel: string;
+    tryOnLabel: string;
+    historyTitle: string;
+    historySubtitle: string;
+    emptyHistory: string;
+    trackerTitle: string;
+    trackerSubtitle: string;
+    signOut: string;
+    loyalty: string;
+    noPhone: string;
+  }
+> = {
+  ru: {
+    subtitle: "АККАУНТ / НАСТРОЙКИ / ИСТОРИЯ",
+    themeTitle: "ТЕМА",
+    themeSubtitle: "Ручное переключение светлого и темного режима должно оставаться доступным глобально.",
+    languageTitle: "ЯЗЫК",
+    languageSubtitle: "Русский, казахский и английский должны быть доступны как полноценная настройка профиля.",
+    accountTitle: "СОСТОЯНИЕ АККАУНТА",
+    accountSubtitle: "Реальная сессия, email пользователя и роль в продуктовой системе.",
+    roleLabel: "РОЛЬ",
+    tryOnLabel: "TRY-ON СЕССИИ",
+    historyTitle: "ИСТОРИЯ AI TRY-ON",
+    historySubtitle: "Сохраненные примерки и сгенерированные результаты, привязанные к профилю клиента.",
+    emptyHistory: "История примерок пока пуста. Создай первую fit-preview с карточки товара.",
+    trackerTitle: "ТРЕКЕР ЗАКАЗА",
+    trackerSubtitle: "Прогресс клиента обновляется после действий франчайзи и цеха в реальном времени.",
+    signOut: "ВЫЙТИ",
+    loyalty: "ЛОЯЛЬНОСТЬ",
+    noPhone: "ТЕЛЕФОН НЕ ДОБАВЛЕН",
+  },
+  kk: {
+    subtitle: "АККАУНТ / БАПТАУЛАР / ТАРИХ",
+    themeTitle: "ТЕМА",
+    themeSubtitle: "Жарық және қараңғы режимді қолмен ауыстыру бүкіл жүйеде қолжетімді болуы керек.",
+    languageTitle: "ТІЛ",
+    languageSubtitle: "Қазақ, орыс және ағылшын тілдері профильдегі толыққанды баптау ретінде болуы тиіс.",
+    accountTitle: "АККАУНТ КҮЙІ",
+    accountSubtitle: "Нақты сессия, пайдаланушы email-ы және өнім ішіндегі рөл.",
+    roleLabel: "РӨЛ",
+    tryOnLabel: "TRY-ON СЕССИЯЛАРЫ",
+    historyTitle: "AI TRY-ON ТАРИХЫ",
+    historySubtitle: "Клиент профиліне байланысқан сақталған preview және generated results.",
+    emptyHistory: "Try-on тарихы әзірге бос. Алғашқы fit-preview-ді өнім бетінен жаса.",
+    trackerTitle: "ТАПСЫРЫС ТРЕКЕРІ",
+    trackerSubtitle: "Клиент прогресі франчайзи мен өндіріс әрекеттерінен кейін нақты уақытта жаңарады.",
+    signOut: "ШЫҒУ",
+    loyalty: "ЛОЯЛДЫҚ",
+    noPhone: "ТЕЛЕФОН ҚОСЫЛМАҒАН",
+  },
+  en: {
+    subtitle: "ACCOUNT / PREFERENCES / HISTORY",
+    themeTitle: "THEME",
+    themeSubtitle: "Manual light and dark switching should remain globally available.",
+    languageTitle: "LANGUAGE",
+    languageSubtitle: "Russian, Kazakh and English should be available as a real profile-level preference.",
+    accountTitle: "ACCOUNT STATE",
+    accountSubtitle: "Real auth session, stored email and role inside the product system.",
+    roleLabel: "ROLE",
+    tryOnLabel: "TRY-ON SESSIONS",
+    historyTitle: "AI TRY-ON HISTORY",
+    historySubtitle: "Saved previews and generated results tied to the client profile.",
+    emptyHistory: "No try-on history yet. Generate your first fit preview from a product page.",
+    trackerTitle: "ORDER TRACKER",
+    trackerSubtitle: "Client progress updates from franchisee and atelier actions in real time.",
+    signOut: "SIGN OUT",
+    loyalty: "LOYALTY",
+    noPhone: "NO PHONE",
+  },
+};
 
 export default function ProfileScreen() {
   const theme = useResolvedTheme();
@@ -18,6 +101,8 @@ export default function ProfileScreen() {
   const activeOrder = useAppStore((state) => state.activeOrder);
   const tryOnSessions = useAppStore((state) => state.tryOnSessions);
   const logout = useAppStore((state) => state.logout);
+  const language = useAppStore((state) => state.language);
+  const copy = COPY[language];
 
   if (!user) {
     router.replace("/login");
@@ -25,7 +110,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScreenShell title="PROFILE" subtitle="ACCOUNT / PREFERENCES / HISTORY">
+    <ScreenShell title="PROFILE" subtitle={copy.subtitle}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Panel style={styles.identity}>
           <View style={styles.identityGrid}>
@@ -35,7 +120,7 @@ export default function ProfileScreen() {
                 {user.name.toUpperCase()}
               </Text>
               <Text style={[styles.role, { color: theme.colors.textSecondary }]}>
-                {user.email} / {user.phone ?? "NO PHONE"}
+                {user.email} / {user.phone ?? copy.noPhone}
               </Text>
 
               <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary }]}>
@@ -51,7 +136,7 @@ export default function ProfileScreen() {
               </View>
 
               <Text style={[styles.progressText, { color: theme.colors.textMuted }]}>
-                LOYALTY / {user.loyaltyProgress}% TO NEXT TIER
+                {copy.loyalty} / {user.loyaltyProgress}% TO NEXT TIER
               </Text>
             </View>
 
@@ -68,28 +153,25 @@ export default function ProfileScreen() {
 
         <View style={styles.grid}>
           <Panel style={styles.settingsPanel}>
-            <SectionHeading
-              title="THEME"
-              subtitle="Manual light and dark switching remains available globally."
-              compact
-            />
+            <SectionHeading title={copy.themeTitle} subtitle={copy.themeSubtitle} compact />
             <ThemeSwitch />
           </Panel>
 
           <Panel style={styles.settingsPanel}>
-            <SectionHeading
-              title="ACCOUNT STATE"
-              subtitle="Real auth session, stored account email and role-specific workspace access."
-              compact
-            />
+            <SectionHeading title={copy.languageTitle} subtitle={copy.languageSubtitle} compact />
+            <LanguageSwitch />
+          </Panel>
+
+          <Panel style={styles.settingsPanel}>
+            <SectionHeading title={copy.accountTitle} subtitle={copy.accountSubtitle} compact />
             <View style={styles.metaBlock}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>ROLE</Text>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.roleLabel}</Text>
               <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
                 {user.role.toUpperCase()}
               </Text>
             </View>
             <View style={styles.metaBlock}>
-              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>TRY-ON SESSIONS</Text>
+              <Text style={[styles.metaLabel, { color: theme.colors.textMuted }]}>{copy.tryOnLabel}</Text>
               <Text style={[styles.metaValue, { color: theme.colors.textPrimary }]}>
                 {tryOnSessions.length}
               </Text>
@@ -99,11 +181,7 @@ export default function ProfileScreen() {
 
         {user.role === "client" ? (
           <Panel>
-            <SectionHeading
-              title="AI TRY-ON HISTORY"
-              subtitle="Saved previews and generated results tied to the client profile."
-              compact
-            />
+            <SectionHeading title={copy.historyTitle} subtitle={copy.historySubtitle} compact />
             <View style={styles.tryOnGrid}>
               {tryOnSessions.length ? (
                 tryOnSessions.map((session) => (
@@ -137,7 +215,7 @@ export default function ProfileScreen() {
                 ))
               ) : (
                 <Text style={[styles.tryOnText, { color: theme.colors.textSecondary }]}>
-                  No try-on history yet. Generate your first fit preview from a product page.
+                  {copy.emptyHistory}
                 </Text>
               )}
             </View>
@@ -146,17 +224,13 @@ export default function ProfileScreen() {
 
         {activeOrder ? (
           <Panel>
-            <SectionHeading
-              title="ORDER TRACKER"
-              subtitle="Client progress updates from franchisee and atelier actions in real time."
-              compact
-            />
+            <SectionHeading title={copy.trackerTitle} subtitle={copy.trackerSubtitle} compact />
             <OrderTracker order={activeOrder} />
           </Panel>
         ) : null}
 
         <MonoButton
-          label="SIGN OUT"
+          label={copy.signOut}
           variant="secondary"
           onPress={async () => {
             await logout();

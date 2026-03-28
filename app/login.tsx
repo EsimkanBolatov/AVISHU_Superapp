@@ -220,6 +220,14 @@ export default function LoginScreen() {
               <View style={[styles.visualImageWrap, { borderColor: theme.colors.borderSoft }]}>
                 <View style={[styles.visualImageInner, { backgroundColor: theme.colors.surfaceSecondary }]}>
                   <Image source={referenceTechJacket} style={styles.imageFill} resizeMode="cover" />
+                  <View
+                    style={[
+                      styles.visualVeil,
+                      {
+                        backgroundColor: theme.colors.backgroundSecondary,
+                      },
+                    ]}
+                  />
                 </View>
               </View>
             </View>
@@ -391,9 +399,20 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   imageFill: {
-    width: "118%",
-    height: "100%",
-    alignSelf: "flex-end",
+    position: "absolute",
+    right: -320,
+    bottom: -54,
+    width: 1120,
+    height: 1040,
+    transform: [{ scale: 1.06 }],
+  },
+  visualVeil: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: "26%",
+    opacity: 0.82,
   },
   visualChecklist: {
     gap: 10,

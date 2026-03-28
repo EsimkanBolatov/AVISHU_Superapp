@@ -24,6 +24,10 @@ export interface User {
   role: Role;
   avatarUrl?: string;
   phone?: string;
+  defaultShippingAddress?: string;
+  paymentCardBrand?: string;
+  paymentCardLast4?: string;
+  paymentCardHolder?: string;
   loyaltyProgress: number;
 }
 
