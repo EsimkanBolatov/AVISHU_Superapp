@@ -58,12 +58,14 @@ interface AppState {
   activeOrder: Order | null;
   language: AppLanguage;
   themePreference: ThemePreference;
+  desktopHeaderCollapsed: boolean;
   isLoading: boolean;
   socket: Socket | null;
   hydrate: () => Promise<void>;
   refreshBootstrap: () => Promise<void>;
   setLanguage: (language: AppLanguage) => void;
   setThemePreference: (preference: ThemePreference) => void;
+  setDesktopHeaderCollapsed: (collapsed: boolean) => void;
   login: (payload: AuthPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
@@ -186,6 +188,7 @@ export const useAppStore = create<AppState>()(
       activeOrder: null,
       language: "ru",
       themePreference: "system",
+      desktopHeaderCollapsed: false,
       isLoading: false,
       socket: null,
       hydrate: async () => {
@@ -224,6 +227,7 @@ export const useAppStore = create<AppState>()(
         void i18n.changeLanguage(language);
       },
       setThemePreference: (themePreference) => set({ themePreference }),
+      setDesktopHeaderCollapsed: (desktopHeaderCollapsed) => set({ desktopHeaderCollapsed }),
       login: async (payload) => {
         set({ isLoading: true });
 
@@ -438,6 +442,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         language: state.language,
         themePreference: state.themePreference,
+        desktopHeaderCollapsed: state.desktopHeaderCollapsed,
         token: state.token,
         cartItems: state.cartItems,
       }),

@@ -17,6 +17,8 @@ import { useResolvedTheme } from "../lib/theme";
 import { useAppStore } from "../store/useAppStore";
 import { AppLanguage, Role } from "../types";
 
+const SHELL_MAX_WIDTH = 1880;
+
 const COPY: Record<
   AppLanguage,
   {
@@ -29,6 +31,8 @@ const COPY: Record<
     prototype: string;
     menu: string;
     close: string;
+    collapse: string;
+    expand: string;
   }
 > = {
   ru: {
@@ -41,6 +45,8 @@ const COPY: Record<
     prototype: "Прототип / 2026",
     menu: "Меню",
     close: "Свернуть",
+    collapse: "Свернуть",
+    expand: "Развернуть",
   },
   kk: {
     home: "Лендинг",
@@ -52,6 +58,8 @@ const COPY: Record<
     prototype: "Прототип / 2026",
     menu: "Мәзір",
     close: "Жинау",
+    collapse: "Жинау",
+    expand: "Жаю",
   },
   en: {
     home: "Landing",
@@ -63,6 +71,8 @@ const COPY: Record<
     prototype: "Prototype / 2026",
     menu: "Menu",
     close: "Collapse",
+    collapse: "Collapse",
+    expand: "Expand",
   },
 };
 
@@ -102,6 +112,8 @@ export function ScreenShell({
   const language = useAppStore((state) => state.language);
   const user = useAppStore((state) => state.user);
   const cartItems = useAppStore((state) => state.cartItems);
+  const desktopHeaderCollapsed = useAppStore((state) => state.desktopHeaderCollapsed);
+  const setDesktopHeaderCollapsed = useAppStore((state) => state.setDesktopHeaderCollapsed);
   const copy = COPY[language];
   const isCompact = width < 760;
   const [mobileExpanded, setMobileExpanded] = useState(false);
@@ -160,46 +172,71 @@ export function ScreenShell({
     return items;
   }, [copy.admin, copy.cart, copy.dashboard, copy.home, copy.profile, profileRoute, user, cartItems]);
 
-  const headerContentVisible = !isCompact || mobileExpanded;
+  const headerContentVisible = isCompact ? mobileExpanded : !desktopHeaderCollapsed;
+
+  function handleHeaderToggle() {
+    if (isCompact) {
+      setMobileExpanded((current) => !current);
+      return;
+    }
+
+    setDesktopHeaderCollapsed(!desktopHeaderCollapsed);
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.frame, isCompact && styles.frameCompact]}>
-        <View
-          style={[
-            styles.topbar,
-            isCompact && styles.topbarCompact,
-            {
-              borderColor: theme.colors.borderSoft,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-        >
-          <View style={styles.topbarLead}>
-            <View style={styles.brandRow}>
-              <View style={styles.titleBlock}>
-                <Text style={[styles.brand, isCompact && styles.brandCompact, { color: theme.colors.textPrimary }]}>
-                  AVISHU
-                </Text>
-                <Text style={[styles.subtitle, isCompact && styles.subtitleCompact, { color: theme.colors.textMuted }]}>
-                  {subtitle}
-                </Text>
-                <Text
-                  style={[
-                    styles.title,
-                    isCompact && styles.titleCompact,
-                    { color: theme.colors.textPrimary },
-                  ]}
-                >
-                  {title}
-                </Text>
-              </View>
+        <View style={styles.viewport}>
+          <View
+            style={[
+              styles.topbar,
+              isCompact && styles.topbarCompact,
+              !isCompact && desktopHeaderCollapsed && styles.topbarCollapsed,
+              {
+                borderColor: theme.colors.borderSoft,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.topbarLead,
+                !isCompact && desktopHeaderCollapsed && styles.topbarLeadCollapsed,
+              ]}
+            >
+              <View style={styles.brandRow}>
+                <View style={styles.titleBlock}>
+                  <Text
+                    style={[styles.brand, isCompact && styles.brandCompact, { color: theme.colors.textPrimary }]}
+                  >
+                    AVISHU
+                  </Text>
+                  <Text
+                    style={[
+                      styles.subtitle,
+                      isCompact && styles.subtitleCompact,
+                      { color: theme.colors.textMuted },
+                    ]}
+                  >
+                    {subtitle}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.title,
+                      isCompact && styles.titleCompact,
+                      !isCompact && desktopHeaderCollapsed && styles.titleCollapsed,
+                      { color: theme.colors.textPrimary },
+                    ]}
+                  >
+                    {title}
+                  </Text>
+                </View>
 
-              {isCompact ? (
                 <Pressable
-                  onPress={() => setMobileExpanded((current) => !current)}
+                  onPress={handleHeaderToggle}
                   style={[
                     styles.menuButton,
+                    !isCompact && styles.menuButtonDesktop,
                     {
                       borderColor: theme.colors.borderSoft,
                       backgroundColor: theme.colors.surfaceSecondary,
@@ -207,129 +244,135 @@ export function ScreenShell({
                   ]}
                 >
                   <Text style={[styles.menuLabel, { color: theme.colors.textPrimary }]}>
-                    {mobileExpanded ? copy.close : copy.menu}
+                    {isCompact
+                      ? mobileExpanded
+                        ? copy.close
+                        : copy.menu
+                      : desktopHeaderCollapsed
+                        ? copy.expand
+                        : copy.collapse}
                   </Text>
                 </Pressable>
-              ) : null}
-            </View>
-
-            <Text style={[styles.metaText, isCompact && styles.metaTextCompact, { color: theme.colors.textMuted }]}>
-              {copy.live} / {copy.prototype}
-            </Text>
-          </View>
-
-          {headerContentVisible ? (
-            <View style={[styles.topbarRight, isCompact && styles.topbarRightCompact]}>
-              <View style={styles.toggleRow}>
-                <LanguageSwitch compact={isCompact} />
-                <ThemeSwitch compact={isCompact} />
               </View>
 
-              {isCompact ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.shortcutRail}
-                >
-                  {shortcuts.map((item) => {
-                    const active = pathname === item.route;
-
-                    return (
-                      <Pressable
-                        key={item.key}
-                        onPress={() => router.push(item.route as never)}
-                        style={[
-                          styles.shortcut,
-                          isCompact && styles.shortcutCompact,
-                          {
-                            borderColor: active ? theme.colors.border : theme.colors.borderSoft,
-                            backgroundColor: active
-                              ? theme.colors.surfaceSecondary
-                              : theme.colors.surface,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.shortcutLabel, { color: theme.colors.textPrimary }]}>
-                          {item.label}
-                        </Text>
-                        {item.count ? (
-                          <View
-                            style={[
-                              styles.count,
-                              {
-                                backgroundColor: theme.colors.accent,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.countLabel,
-                                {
-                                  color: theme.colors.accentContrast,
-                                },
-                              ]}
-                            >
-                              {item.count}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              ) : (
-                <View style={styles.shortcutRow}>
-                  {shortcuts.map((item) => {
-                    const active = pathname === item.route;
-
-                    return (
-                      <Pressable
-                        key={item.key}
-                        onPress={() => router.push(item.route as never)}
-                        style={[
-                          styles.shortcut,
-                          {
-                            borderColor: active ? theme.colors.border : theme.colors.borderSoft,
-                            backgroundColor: active
-                              ? theme.colors.surfaceSecondary
-                              : theme.colors.surface,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.shortcutLabel, { color: theme.colors.textPrimary }]}>
-                          {item.label}
-                        </Text>
-                        {item.count ? (
-                          <View
-                            style={[
-                              styles.count,
-                              {
-                                backgroundColor: theme.colors.accent,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.countLabel,
-                                {
-                                  color: theme.colors.accentContrast,
-                                },
-                              ]}
-                            >
-                              {item.count}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
+              <Text style={[styles.metaText, isCompact && styles.metaTextCompact, { color: theme.colors.textMuted }]}>
+                {copy.live} / {copy.prototype}
+              </Text>
             </View>
-          ) : null}
-        </View>
 
-        <View style={styles.content}>{children}</View>
+            {headerContentVisible ? (
+              <View style={[styles.topbarRight, isCompact && styles.topbarRightCompact]}>
+                <View style={styles.toggleRow}>
+                  <LanguageSwitch compact={isCompact} />
+                  <ThemeSwitch compact={isCompact} />
+                </View>
+
+                {isCompact ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.shortcutRail}
+                  >
+                    {shortcuts.map((item) => {
+                      const active = pathname === item.route;
+
+                      return (
+                        <Pressable
+                          key={item.key}
+                          onPress={() => router.push(item.route as never)}
+                          style={[
+                            styles.shortcut,
+                            styles.shortcutCompact,
+                            {
+                              borderColor: active ? theme.colors.border : theme.colors.borderSoft,
+                              backgroundColor: active
+                                ? theme.colors.surfaceSecondary
+                                : theme.colors.surface,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.shortcutLabel, { color: theme.colors.textPrimary }]}>
+                            {item.label}
+                          </Text>
+                          {item.count ? (
+                            <View
+                              style={[
+                                styles.count,
+                                {
+                                  backgroundColor: theme.colors.accent,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.countLabel,
+                                  {
+                                    color: theme.colors.accentContrast,
+                                  },
+                                ]}
+                              >
+                                {item.count}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                ) : (
+                  <View style={styles.shortcutRow}>
+                    {shortcuts.map((item) => {
+                      const active = pathname === item.route;
+
+                      return (
+                        <Pressable
+                          key={item.key}
+                          onPress={() => router.push(item.route as never)}
+                          style={[
+                            styles.shortcut,
+                            {
+                              borderColor: active ? theme.colors.border : theme.colors.borderSoft,
+                              backgroundColor: active
+                                ? theme.colors.surfaceSecondary
+                                : theme.colors.surface,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.shortcutLabel, { color: theme.colors.textPrimary }]}>
+                            {item.label}
+                          </Text>
+                          {item.count ? (
+                            <View
+                              style={[
+                                styles.count,
+                                {
+                                  backgroundColor: theme.colors.accent,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.countLabel,
+                                  {
+                                    color: theme.colors.accentContrast,
+                                  },
+                                ]}
+                              >
+                                {item.count}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.content}>{children}</View>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -344,38 +387,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 14,
     paddingBottom: 22,
-    gap: 18,
   },
   frameCompact: {
     paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 12,
-    gap: 12,
+  },
+  viewport: {
+    flex: 1,
+    width: "100%",
+    maxWidth: SHELL_MAX_WIDTH,
+    alignSelf: "center",
+    gap: 18,
   },
   topbar: {
+    width: "100%",
     borderWidth: 1,
     borderRadius: 32,
-    paddingHorizontal: 28, 
-    paddingVertical: 24, 
+    paddingHorizontal: 28,
+    paddingVertical: 24,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    maxWidth: 1600,
-    alignSelf: "center",
-    width: "100%",
+    gap: 18,
   },
   topbarCompact: {
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    gap: 16, 
+    gap: 16,
     flexDirection: "column",
-    alignItems: "stretch", 
+    alignItems: "stretch",
     justifyContent: "flex-start",
+  },
+  topbarCollapsed: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    gap: 12,
   },
   topbarLead: {
     gap: 8,
     flexShrink: 1,
+    flex: 1,
+  },
+  topbarLeadCollapsed: {
+    gap: 4,
   },
   brandRow: {
     flexDirection: "row",
@@ -417,6 +473,11 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     letterSpacing: 0.7,
   },
+  titleCollapsed: {
+    fontSize: 36,
+    lineHeight: 40,
+    letterSpacing: 1,
+  },
   metaText: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
@@ -436,15 +497,20 @@ const styles = StyleSheet.create({
     minWidth: 88,
     alignItems: "center",
   },
+  menuButtonDesktop: {
+    minWidth: 118,
+    paddingHorizontal: 14,
+  },
   menuLabel: {
     fontFamily: "SpaceGrotesk_700Bold",
     fontSize: 10,
     letterSpacing: 1.3,
   },
   topbarRight: {
-    gap: 16, 
+    gap: 16,
     alignItems: "flex-end",
     justifyContent: "center",
+    flexShrink: 0,
   },
   topbarRightCompact: {
     alignItems: "stretch",
@@ -501,5 +567,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    width: "100%",
+    minHeight: 0,
   },
 });
