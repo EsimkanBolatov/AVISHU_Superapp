@@ -92,31 +92,15 @@ function getRoleRoute(role?: Role | null) {
   if (!role) {
     return "/login";
   }
-
-  if (role === "client") {
-    return "/client";
-  }
-
-  if (role === "admin") {
-    return "/admin";
-  }
-
-  if (role === "franchisee") {
-    return "/franchisee";
-  }
-
-  if (role === "support") {
-    return "/support";
-  }
-
+  if (role === "client") return "/client";
+  if (role === "admin") return "/admin";
+  if (role === "franchisee") return "/franchisee";
+  if (role === "support") return "/support";
   return "/production";
 }
 
 function isPathActive(pathname: string, target: string) {
-  if (pathname === target) {
-    return true;
-  }
-
+  if (pathname === target) return true;
   return pathname.startsWith(`${target}/`);
 }
 
@@ -134,6 +118,8 @@ export function ScreenShell({
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  
+  // Store
   const language = useAppStore((state) => state.language);
   const user = useAppStore((state) => state.user);
   const cartItems = useAppStore((state) => state.cartItems);
@@ -143,9 +129,14 @@ export function ScreenShell({
   const isOffline = useAppStore((state) => state.isOffline);
   const lastError = useAppStore((state) => state.lastError);
   const clearError = useAppStore((state) => state.clearError);
+  
   const copy = COPY[language];
   const isCompact = width < 760;
   const [mobileExpanded, setMobileExpanded] = useState(false);
+
+  // Определяем единое состояние "свернутости" для обеих платформ
+  const isCollapsed = isCompact ? !mobileExpanded : desktopHeaderCollapsed;
+  const headerContentVisible = isCompact ? mobileExpanded : !desktopHeaderCollapsed;
 
   useEffect(() => {
     setMobileExpanded(false);
@@ -189,7 +180,6 @@ export function ScreenShell({
         });
       }
     }
-
     return items;
   }, [copy.admin, copy.cart, copy.dashboard, copy.home, copy.profile, copy.saved, copy.support, profileRoute, user, cartItems, favorites.length]);
 
@@ -206,14 +196,11 @@ export function ScreenShell({
     [user?.role, copy.dashboard, copy.saved, copy.cart, copy.profile, cartItems, profileRoute],
   );
 
-  const headerContentVisible = isCompact ? mobileExpanded : !desktopHeaderCollapsed;
-
   function handleHeaderToggle() {
     if (isCompact) {
       setMobileExpanded((current) => !current);
       return;
     }
-
     setDesktopHeaderCollapsed(!desktopHeaderCollapsed);
   }
 
@@ -231,35 +218,45 @@ export function ScreenShell({
             style={[
               styles.topbar,
               isCompact && styles.topbarCompact,
-              !isCompact && desktopHeaderCollapsed && styles.topbarCollapsed,
-              {
-                // Убрали borderColor, оставили только фон
-                backgroundColor: theme.colors.surface,
-              },
+              isCollapsed && styles.topbarCollapsed, // Применяем компактные отступы, если свернуто
+              { backgroundColor: theme.colors.surface },
             ]}
           >
             <View style={[styles.topbarLead, !isCompact && styles.topbarLeadDesktop]}>
-              <View style={styles.brandRow}>
+              <View style={[
+                styles.brandRow, 
+                { alignItems: isCollapsed ? "center" : "flex-start" } // Центрируем кнопку и лого, если скрыли подзаголовки
+              ]}>
                 <View style={styles.titleBlock}>
-                  <Text style={[styles.brand, isCompact && styles.brandCompact, { color: theme.colors.textPrimary }]}>
+                  <Text style={[
+                    styles.brand, 
+                    isCompact && styles.brandCompact, 
+                    isCollapsed && styles.brandCollapsed, // Чуть уменьшаем шрифт в свернутом виде
+                    { color: theme.colors.textPrimary }
+                  ]}>
                     AVISHU
                   </Text>
-                  <Text style={[styles.subtitle, isCompact && styles.subtitleCompact, { color: theme.colors.textMuted }]}>
-                    {subtitle}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.title,
-                      isCompact && styles.titleCompact,
-                      !isCompact && desktopHeaderCollapsed && styles.titleCollapsed,
-                      { color: theme.colors.textPrimary },
-                    ]}
-                  >
-                    {title}
-                  </Text>
-                  <Text style={[styles.liveLine, { color: theme.colors.textMuted }]}>
-                    {copy.live} / {copy.prototype}
-                  </Text>
+                  
+                  {/* Скрываем все лишнее, когда шапка свернута */}
+                  {!isCollapsed && (
+                    <>
+                      <Text style={[styles.subtitle, isCompact && styles.subtitleCompact, { color: theme.colors.textMuted }]}>
+                        {subtitle}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.title,
+                          isCompact && styles.titleCompact,
+                          { color: theme.colors.textPrimary },
+                        ]}
+                      >
+                        {title}
+                      </Text>
+                      <Text style={[styles.liveLine, { color: theme.colors.textMuted }]}>
+                        {copy.live} / {copy.prototype}
+                      </Text>
+                    </>
+                  )}
                 </View>
 
                 {isCompact ? (
@@ -405,7 +402,6 @@ export function ScreenShell({
           style={[
             styles.bottomNav,
             {
-              // Убрали borderColor, оставили только фон
               backgroundColor: theme.colors.surface,
               bottom: Math.max(insets.bottom, 12),
             },
@@ -447,7 +443,6 @@ const styles = StyleSheet.create({
   viewport: { flex: 1, width: "100%", maxWidth: SHELL_MAX_WIDTH, alignSelf: "center", gap: 18 },
   topbar: {
     width: "100%",
-    // Убрали borderWidth: 1
     borderRadius: 32,
     paddingHorizontal: 24, 
     paddingVertical: 20,   
@@ -475,13 +470,19 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8, 
   },
-  topbarCollapsed: { paddingHorizontal: 24, paddingVertical: 16, gap: 12 },
+  // Обновленный стиль для свернутого состояния (делаем тоньше)
+  topbarCollapsed: { 
+    paddingVertical: 12, 
+    gap: 12 
+  },
   topbarLead: { gap: 8 },
   topbarLeadDesktop: { flexShrink: 1, flex: 1 },
-  brandRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, alignItems: "flex-start" },
-  titleBlock: { flex: 1, minWidth: 0, gap: 4 },
+  brandRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  titleBlock: { flex: 1, minWidth: 0, gap: 4, justifyContent: "center" },
   brand: { fontFamily: "Oswald_500Medium", fontSize: 34, letterSpacing: 2.4 },
   brandCompact: { fontSize: 28, letterSpacing: 2 },
+  // Немного уменьшаем лого, когда навигация свернута для большей аккуратности
+  brandCollapsed: { fontSize: 24, letterSpacing: 1.5 },
   subtitle: { fontFamily: "SpaceGrotesk_700Bold", fontSize: 10, letterSpacing: 1.8 },
   subtitleCompact: { fontSize: 9, letterSpacing: 1.2 },
   title: { fontFamily: "Oswald_500Medium", fontSize: 58, lineHeight: 62, letterSpacing: 1.6 },
@@ -527,12 +528,10 @@ const styles = StyleSheet.create({
   dismissButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10 },
   dismissLabel: { fontFamily: "SpaceGrotesk_700Bold", fontSize: 10, letterSpacing: 1.2 },
   content: { flex: 1, width: "100%", minHeight: 0 },
-  contentWithBottomNav: {},
   bottomNav: {
     position: "absolute",
     left: 16, 
     right: 16,
-    // Убрали borderWidth: 1
     borderRadius: 32, 
     padding: 8,
     flexDirection: "row",
