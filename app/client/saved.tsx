@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, View, Platform } from "react-native";
+import { ScrollView, StyleSheet, Text, View, Platform, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MonoButton } from "../../src/components/MonoButton";
@@ -86,6 +86,10 @@ const COPY: Record<
 export default function SavedScreen() {
   const redirect = useRequireRole("client");
   const theme = useResolvedTheme();
+  
+  const { width } = useWindowDimensions();
+  const isCompact = width < 760;
+
   const language = useAppStore((state) => state.language);
   const products = useAppStore((state) => state.products);
   const favorites = useAppStore((state) => state.favorites);
@@ -128,22 +132,24 @@ export default function SavedScreen() {
       <ScrollView 
         contentContainerStyle={[
           styles.container,
+          // Убрали ограничение по ширине, теперь скролл такой же широкий, как шапка
           { paddingBottom: 24 + extraBottomPadding }
         ]} 
         showsVerticalScrollIndicator={false}
       >
         <Panel style={styles.section}>
           <SectionHeading title={copy.favoritesTitle} subtitle={copy.favoritesSubtitle} compact />
-          <View style={styles.productGrid}>
+          <View style={[styles.productGrid, !isCompact && styles.gridWeb]}>
             {favoriteProducts.length ? (
               favoriteProducts.map((product) =>
                 product ? (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    layout="mobile"
-                    onPress={() => router.push(`/client/product/${product.id}`)}
-                  />
+                  <View key={product.id} style={!isCompact && styles.cardWrapperWeb}>
+                    <ProductCard
+                      product={product}
+                      layout="mobile"
+                      onPress={() => router.push(`/client/product/${product.id}`)}
+                    />
+                  </View>
                 ) : null,
               )
             ) : (
@@ -154,16 +160,17 @@ export default function SavedScreen() {
 
         <Panel style={styles.section}>
           <SectionHeading title={copy.historyTitle} subtitle={copy.historySubtitle} compact />
-          <View style={styles.productGrid}>
+          <View style={[styles.productGrid, !isCompact && styles.gridWeb]}>
             {recentViewProducts.length ? (
               recentViewProducts.map((product) =>
                 product ? (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    layout="mobile"
-                    onPress={() => router.push(`/client/product/${product.id}`)}
-                  />
+                  <View key={product.id} style={!isCompact && styles.cardWrapperWeb}>
+                    <ProductCard
+                      product={product}
+                      layout="mobile"
+                      onPress={() => router.push(`/client/product/${product.id}`)}
+                    />
+                  </View>
                 ) : null,
               )
             ) : (
@@ -174,7 +181,7 @@ export default function SavedScreen() {
 
         <Panel style={styles.section}>
           <SectionHeading title={copy.recommendationsTitle} subtitle={copy.recommendationsSubtitle} compact />
-          <View style={styles.stack}>
+          <View style={[styles.stack, !isCompact && styles.gridWeb]}>
             {recommendedProducts.length ? (
               recommendedProducts.map(({ recommendation, product }) =>
                 product ? (
@@ -182,6 +189,7 @@ export default function SavedScreen() {
                     key={recommendation.id}
                     style={[
                       styles.infoCard,
+                      !isCompact && styles.cardWrapperWeb,
                       {
                         borderColor: theme.colors.borderSoft,
                         backgroundColor: theme.colors.surfaceSecondary,
@@ -211,13 +219,14 @@ export default function SavedScreen() {
 
         <Panel style={styles.section}>
           <SectionHeading title={copy.rewardsTitle} subtitle={copy.rewardsSubtitle} compact />
-          <View style={styles.stack}>
+          <View style={[styles.stack, !isCompact && styles.gridWeb]}>
             {rewards.length ? (
               rewards.map((reward) => (
                 <View
                   key={reward.id}
                   style={[
                     styles.infoCard,
+                    !isCompact && styles.cardWrapperWeb,
                     {
                       borderColor: theme.colors.borderSoft,
                       backgroundColor: theme.colors.surfaceSecondary,
@@ -239,12 +248,13 @@ export default function SavedScreen() {
 
         <Panel style={styles.section}>
           <SectionHeading title={copy.notificationsTitle} subtitle={copy.notificationsSubtitle} compact />
-          <View style={styles.stack}>
+          <View style={[styles.stack, !isCompact && styles.gridWeb]}>
             {notifications.slice(0, 5).map((notification) => (
               <View
                 key={notification.id}
                 style={[
                   styles.infoCard,
+                  !isCompact && styles.cardWrapperWeb,
                   {
                     borderColor: theme.colors.borderSoft,
                     backgroundColor: theme.colors.surfaceSecondary,
@@ -266,6 +276,7 @@ export default function SavedScreen() {
                 key={order.id}
                 style={[
                   styles.infoCard,
+                  !isCompact && styles.cardWrapperWeb,
                   {
                     borderColor: theme.colors.borderSoft,
                     backgroundColor: theme.colors.surfaceSecondary,
@@ -302,6 +313,19 @@ const styles = StyleSheet.create({
   stack: {
     gap: 12,
   },
+  
+  // ИДЕАЛЬНАЯ СЕТКА ДЛЯ ВЕБА
+  gridWeb: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    width: "100%",
+  },
+  cardWrapperWeb: {
+    // flexGrow: 1 заставляет карточку растягиваться, заполняя ВСЁ пустое место в ряду
+    flexGrow: 1, 
+    flexBasis: 320, // Минимальная желаемая ширина перед переносом на новую строку
+  },
+
   infoCard: {
     borderWidth: 1,
     borderRadius: 22,
